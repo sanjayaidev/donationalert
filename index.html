@@ -1,0 +1,898 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+.root{
+  font-family:'Space Grotesk',sans-serif;
+  background:#0a0a0f;
+  color:#e8e6f0;
+  min-height:900px;
+  padding:0;
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 20px;
+  border-bottom:0.5px solid #1e1e2e;
+  background:#0d0d16;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo-mark{
+  width:32px;height:32px;
+  background:#7f77dd;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#fff;font-weight:700;
+}
+
+.logo-text{
+  font-size:16px;font-weight:700;
+  color:#e8e6f0;
+  letter-spacing:-0.02em;
+}
+
+.logo-text span{color:#7f77dd;}
+
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  background:#1a0d0d;
+  border:0.5px solid #a32d2d;
+  border-radius:99px;
+  padding:4px 12px;
+  font-size:12px;font-weight:600;
+  color:#f09595;
+  font-family:'Space Mono',monospace;
+}
+
+.live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#e24b4a;
+  animation:pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.viewer-count{
+  display:flex;align-items:center;gap:6px;
+  font-size:13px;color:#888;
+  font-family:'Space Mono',monospace;
+}
+
+.layout{
+  display:grid;
+  grid-template-columns:1fr 240px;
+  gap:0;
+  height:calc(100% - 53px);
+}
+
+.main-col{
+  border-right:0.5px solid #1e1e2e;
+  display:flex;flex-direction:column;
+}
+
+.stream-area{
+  background:#0d0d16;
+  position:relative;
+  aspect-ratio:16/9;
+  border-bottom:0.5px solid #1e1e2e;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+.stream-bg{
+  position:absolute;inset:0;
+  background:#08080f;
+}
+
+.stream-scanlines{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.15) 2px,
+    rgba(0,0,0,0.15) 4px
+  );
+  pointer-events:none;
+}
+
+.stream-placeholder{
+  position:relative;
+  text-align:center;
+  z-index:2;
+}
+
+.stream-icon{
+  font-size:36px;
+  color:#2a2a3e;
+  display:block;
+  margin-bottom:10px;
+}
+
+.stream-label{
+  font-size:13px;
+  color:#3a3a5e;
+  font-family:'Space Mono',monospace;
+}
+
+.stream-overlay-bottom{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(transparent,rgba(0,0,0,0.7));
+  z-index:3;
+}
+
+.streamer-info{
+  display:flex;align-items:center;gap:10px;
+}
+
+.avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:#7f77dd;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;
+  flex-shrink:0;
+}
+
+.streamer-name{font-size:14px;font-weight:600;color:#fff;}
+.stream-title{font-size:11px;color:rgba(255,255,255,0.6);margin-top:1px;}
+
+.stream-controls{
+  display:flex;gap:8px;
+}
+
+.ctrl-btn{
+  background:rgba(255,255,255,0.1);
+  border:0.5px solid rgba(255,255,255,0.15);
+  border-radius:6px;
+  padding:5px 8px;
+  color:rgba(255,255,255,0.7);
+  font-size:14px;
+  cursor:pointer;
+}
+
+.tip-banner{
+  display:none;
+  padding:10px 14px;
+  background:#14102a;
+  border-bottom:0.5px solid #2a2050;
+  animation:slideIn 0.3s ease;
+  align-items:center;
+  gap:10px;
+}
+
+.tip-banner.show{display:flex;}
+
+@keyframes slideIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+
+.tip-avatar{
+  width:28px;height:28px;border-radius:50%;
+  background:#534ab7;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#cecbf6;
+  flex-shrink:0;
+}
+
+.tip-text{font-size:13px;color:#cecbf6;}
+.tip-text strong{color:#afa9ec;font-weight:600;}
+.tip-amount-badge{
+  margin-left:auto;
+  font-family:'Space Mono',monospace;
+  font-size:13px;font-weight:700;
+  background:#26215c;
+  color:#afa9ec;
+  border:0.5px solid #534ab7;
+  border-radius:99px;
+  padding:2px 10px;
+}
+
+.payment-panel{
+  padding:16px;
+  border-bottom:0.5px solid #1e1e2e;
+}
+
+.panel-tabs{
+  display:flex;gap:0;
+  background:#0d0d16;
+  border:0.5px solid #1e1e2e;
+  border-radius:8px;
+  padding:3px;
+  margin-bottom:14px;
+}
+
+.tab{
+  flex:1;padding:6px 0;
+  text-align:center;
+  font-size:12px;font-weight:600;
+  color:#555;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+  letter-spacing:0.02em;
+}
+
+.tab.active{
+  background:#1a1830;
+  color:#afa9ec;
+}
+
+.step-row{
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:12px;
+}
+
+.step-pip{
+  width:20px;height:20px;border-radius:50%;
+  background:#1a1830;border:0.5px solid #2a2050;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#534ab7;
+  flex-shrink:0;font-family:'Space Mono',monospace;
+}
+
+.step-pip.done{background:#534ab7;border-color:#534ab7;color:#fff;}
+.step-pip.active-pip{background:#7f77dd;border-color:#7f77dd;color:#fff;}
+
+.step-line-h{flex:1;height:0.5px;background:#1e1e2e;}
+.step-line-h.done{background:#534ab7;}
+
+.fld{margin-bottom:10px;}
+
+.fld-label{
+  font-size:11px;font-weight:600;
+  color:#555;
+  text-transform:uppercase;letter-spacing:0.06em;
+  margin-bottom:5px;
+  display:block;
+}
+
+.fld input{
+  width:100%;
+  height:36px;
+  background:#0d0d16;
+  border:0.5px solid #2a2a3e;
+  border-radius:7px;
+  padding:0 10px;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:13px;
+  color:#e8e6f0;
+  outline:none;
+  transition:border-color 0.2s;
+}
+
+.fld input:focus{border-color:#7f77dd;}
+.fld input.err-i{border-color:#a32d2d;}
+.err-msg{font-size:11px;color:#f09595;margin-top:3px;display:none;}
+
+.amt-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+  margin-bottom:8px;
+}
+
+.amt-chip{
+  padding:6px 0;text-align:center;
+  background:#0d0d16;border:0.5px solid #2a2a3e;
+  border-radius:7px;
+  font-size:12px;font-weight:600;color:#666;
+  cursor:pointer;transition:all 0.15s;
+  font-family:'Space Mono',monospace;
+}
+
+.amt-chip:hover{border-color:#534ab7;color:#afa9ec;background:#14102a;}
+.amt-chip.sel{border-color:#7f77dd;color:#cecbf6;background:#1a1830;}
+
+.action-btn{
+  width:100%;height:38px;
+  background:#7f77dd;border:none;border-radius:8px;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:13px;font-weight:700;color:#fff;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background 0.15s,transform 0.1s;
+  margin-top:10px;
+  letter-spacing:0.01em;
+}
+
+.action-btn:hover{background:#534ab7;}
+.action-btn:active{transform:scale(0.98);}
+.action-btn:disabled{background:#2a2a3e;color:#555;cursor:not-allowed;transform:none;}
+.action-btn.ghost{
+  background:transparent;
+  border:0.5px solid #2a2a3e;
+  color:#666;
+  margin-top:6px;
+}
+.action-btn.ghost:hover{background:#0d0d16;color:#999;}
+
+.review-box{
+  background:#0d0d16;border:0.5px solid #1e1e2e;
+  border-radius:8px;padding:10px;
+  margin-bottom:10px;
+}
+
+.rv-row{
+  display:flex;justify-content:space-between;
+  padding:5px 0;border-bottom:0.5px solid #141420;
+  font-size:12px;
+}
+
+.rv-row:last-child{border-bottom:none;}
+.rv-label{color:#555;}
+.rv-val{color:#e8e6f0;font-weight:500;font-family:'Space Mono',monospace;}
+.rv-val.big{color:#7f77dd;font-size:16px;font-weight:700;}
+
+.pay-gate{
+  background:#0d0d16;border:0.5px solid #1e1e2e;border-radius:8px;
+  padding:12px;text-align:center;margin-bottom:10px;
+}
+
+.pay-gate-title{font-size:12px;font-weight:600;color:#444;margin-bottom:3px;}
+.pay-methods{
+  display:flex;gap:5px;justify-content:center;margin-top:7px;flex-wrap:wrap;
+}
+
+.pay-method{
+  font-size:10px;font-weight:600;font-family:'Space Mono',monospace;
+  background:#141420;border:0.5px solid #2a2a3e;
+  border-radius:4px;padding:3px 7px;color:#555;
+}
+
+.spin{
+  width:16px;height:16px;
+  border:2px solid rgba(255,255,255,0.2);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  display:none;
+}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.success-state{display:none;text-align:center;padding:8px 0;}
+.success-state.show{display:block;}
+
+.s-icon{
+  width:44px;height:44px;
+  background:#14102a;border:0.5px solid #534ab7;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 8px;
+  font-size:20px;color:#7f77dd;
+}
+
+.s-title{font-size:14px;font-weight:700;color:#e8e6f0;margin-bottom:3px;}
+.s-sub{font-size:11px;color:#555;}
+
+.log-mini{
+  background:#080810;border:0.5px solid #1a1a2e;border-radius:6px;
+  padding:8px;margin:8px 0;
+  font-family:'Space Mono',monospace;font-size:10px;
+  line-height:1.9;
+}
+
+.lm-ok{color:#1d9e75;}
+.lm-err{color:#e24b4a;}
+.lm-info{color:#378add;}
+
+.sidebar{
+  display:flex;flex-direction:column;
+  background:#09090e;
+}
+
+.sidebar-header{
+  padding:12px 14px;
+  border-bottom:0.5px solid #1e1e2e;
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+.sidebar-title{font-size:12px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:0.06em;}
+
+.chat-area{
+  flex:1;
+  padding:10px;
+  display:flex;flex-direction:column;
+  gap:8px;
+  overflow:hidden;
+}
+
+.chat-msg{display:flex;gap:7px;align-items:flex-start;}
+
+.chat-avatar{
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;flex-shrink:0;
+  margin-top:1px;
+}
+
+.chat-body{}
+.chat-name{font-size:11px;font-weight:600;margin-bottom:2px;}
+.chat-text{font-size:12px;color:#888;line-height:1.4;}
+
+.chat-msg.tip-msg .chat-avatar{background:#26215c;color:#afa9ec;}
+.chat-msg.tip-msg .chat-name{color:#7f77dd;}
+.chat-msg.tip-msg .chat-text{color:#afa9ec;}
+
+.chat-msg.mod .chat-avatar{background:#085041;color:#9fe1cb;}
+.chat-msg.mod .chat-name{color:#1d9e75;}
+.chat-msg.mod .chat-text{color:#666;}
+
+.chat-msg.user1 .chat-avatar{background:#1a2a3e;color:#85b7eb;}
+.chat-msg.user1 .chat-name{color:#378add;}
+
+.chat-msg.user2 .chat-avatar{background:#2a1a1a;color:#f0997b;}
+.chat-msg.user2 .chat-name{color:#d85a30;}
+
+.chat-msg.user3 .chat-avatar{background:#1a1a2a;color:#888;}
+.chat-msg.user3 .chat-name{color:#555;}
+
+.chat-divider{
+  text-align:center;font-size:10px;color:#2a2a3e;
+  font-family:'Space Mono',monospace;
+  padding:2px 0;
+}
+
+.chat-input-area{
+  padding:10px;
+  border-top:0.5px solid #1e1e2e;
+  display:flex;gap:6px;
+}
+
+.chat-input-area input{
+  flex:1;height:32px;
+  background:#0d0d16;border:0.5px solid #1e1e2e;
+  border-radius:6px;padding:0 8px;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:12px;color:#e8e6f0;outline:none;
+}
+
+.chat-send{
+  width:32px;height:32px;
+  background:#1a1830;border:0.5px solid #2a2050;
+  border-radius:6px;color:#7f77dd;font-size:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background 0.15s;
+}
+
+.chat-send:hover{background:#2a2050;}
+
+.recent-tips{
+  border-top:0.5px solid #1e1e2e;
+  padding:10px;
+}
+
+.rt-header{
+  font-size:11px;font-weight:600;color:#333;
+  text-transform:uppercase;letter-spacing:0.06em;
+  margin-bottom:8px;
+}
+
+.rt-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 0;
+  border-bottom:0.5px solid #111118;
+}
+
+.rt-item:last-child{border-bottom:none;}
+.rt-name{font-size:11px;color:#555;}
+.rt-amt{font-size:11px;font-weight:700;color:#534ab7;font-family:'Space Mono',monospace;}
+
+.step-panel{display:none;}
+.step-panel.visible{display:block;}
+</style>
+
+<h2 class="sr-only">StreamTip — live stream donation page with chat and payment flow</h2>
+
+<div class="root">
+
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-bolt" aria-hidden="true"></i></div>
+      <div class="logo-text">Stream<span>Tip</span></div>
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+    <div class="viewer-count">
+      <i class="ti ti-users" aria-hidden="true" style="font-size:14px"></i>
+      <span id="viewer-count">1,247</span>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <div class="main-col">
+
+      <div class="stream-area">
+        <div class="stream-bg"></div>
+        <div class="stream-scanlines"></div>
+        <div class="stream-placeholder">
+          <i class="ti ti-device-tv stream-icon" aria-hidden="true"></i>
+          <div class="stream-label">stream embed · paste your URL</div>
+        </div>
+        <div class="stream-overlay-bottom">
+          <div class="streamer-info">
+            <div class="avatar">SJ</div>
+            <div>
+              <div class="streamer-name">Sanjay Live</div>
+              <div class="stream-title">Chill gaming + coding session</div>
+            </div>
+          </div>
+          <div class="stream-controls">
+            <button class="ctrl-btn" aria-label="volume"><i class="ti ti-volume" aria-hidden="true"></i></button>
+            <button class="ctrl-btn" aria-label="fullscreen"><i class="ti ti-arrows-maximize" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-banner" id="tip-banner">
+        <div class="tip-avatar" id="tip-banner-av">SJ</div>
+        <div class="tip-text"><strong id="tip-banner-name">—</strong> just tipped!</div>
+        <div class="tip-amount-badge" id="tip-banner-amt">₹0</div>
+      </div>
+
+      <div class="payment-panel">
+
+        <div class="panel-tabs">
+          <div class="tab active" id="tab-tip" onclick="switchTab('tip')">tip the streamer</div>
+          <div class="tab" id="tab-history" onclick="switchTab('history')">tip history</div>
+        </div>
+
+        <div id="panel-tip">
+
+          <div class="step-row">
+            <div class="step-pip active-pip" id="sp1">1</div>
+            <div class="step-line-h" id="sl1"></div>
+            <div class="step-pip" id="sp2">2</div>
+            <div class="step-line-h" id="sl2"></div>
+            <div class="step-pip" id="sp3">3</div>
+            <div class="step-line-h" id="sl3"></div>
+            <div class="step-pip" id="sp4">4</div>
+          </div>
+
+          <div class="step-panel visible" id="step1">
+            <div class="fld">
+              <label class="fld-label">your name</label>
+              <input type="text" id="f-name" placeholder="display name" />
+              <div class="err-msg" id="e-name">name is required</div>
+            </div>
+            <div class="fld">
+              <label class="fld-label">email</label>
+              <input type="email" id="f-email" placeholder="you@example.com" />
+              <div class="err-msg" id="e-email">valid email required</div>
+            </div>
+            <div class="fld">
+              <label class="fld-label">amount (₹)</label>
+              <div class="amt-row">
+                <button class="amt-chip" onclick="pickAmt(49,this)">₹49</button>
+                <button class="amt-chip" onclick="pickAmt(99,this)">₹99</button>
+                <button class="amt-chip" onclick="pickAmt(199,this)">₹199</button>
+                <button class="amt-chip" onclick="pickAmt(499,this)">₹499</button>
+                <button class="amt-chip" onclick="pickAmt(999,this)">₹999</button>
+                <button class="amt-chip" id="custom-chip" onclick="pickAmt(0,this)">custom</button>
+              </div>
+              <input type="number" id="f-amount" placeholder="or enter amount" min="1" />
+              <div class="err-msg" id="e-amount">min ₹1 required</div>
+            </div>
+            <div class="fld">
+              <label class="fld-label">message (optional)</label>
+              <input type="text" id="f-msg" placeholder="say something..." />
+            </div>
+            <button class="action-btn" onclick="goStep(2)">
+              review tip <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div class="step-panel" id="step2">
+            <div class="review-box">
+              <div class="rv-row"><span class="rv-label">name</span><span class="rv-val" id="r-name">—</span></div>
+              <div class="rv-row"><span class="rv-label">email</span><span class="rv-val" id="r-email">—</span></div>
+              <div class="rv-row"><span class="rv-label">message</span><span class="rv-val" id="r-msg">—</span></div>
+              <div class="rv-row"><span class="rv-label">amount</span><span class="rv-val big" id="r-amt">₹0</span></div>
+            </div>
+            <button class="action-btn" onclick="goStep(3)">
+              <i class="ti ti-credit-card" aria-hidden="true"></i> proceed to payment
+            </button>
+            <button class="action-btn ghost" onclick="goStep(1)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> edit
+            </button>
+          </div>
+
+          <div class="step-panel" id="step3">
+            <div class="pay-gate">
+              <div class="pay-gate-title">cashfree secure checkout</div>
+              <div style="font-size:11px;color:#333;font-family:'Space Mono',monospace;margin-top:2px;" id="pay-show-amt">₹0</div>
+              <div class="pay-methods">
+                <div class="pay-method">UPI</div>
+                <div class="pay-method">CARD</div>
+                <div class="pay-method">NETBANK</div>
+                <div class="pay-method">WALLET</div>
+              </div>
+            </div>
+            <button class="action-btn" id="pay-btn" onclick="doPay()">
+              <span id="pay-txt">pay now</span>
+              <div class="spin" id="pay-spin"></div>
+            </button>
+            <button class="action-btn ghost" onclick="goStep(2)" id="back-btn2">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> back
+            </button>
+          </div>
+
+          <div class="step-panel" id="step4">
+            <div class="success-state show">
+              <div class="s-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+              <div class="s-title">tip sent!</div>
+              <div class="s-sub">streamelements alert fired</div>
+              <div class="log-mini" id="log-mini"></div>
+              <button class="action-btn" onclick="resetFlow()" style="margin-top:4px;">
+                <i class="ti ti-plus" aria-hidden="true"></i> send another
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="panel-history" style="display:none;">
+          <div class="rv-row" style="font-size:11px;color:#333;padding-bottom:8px;">recent tips to this stream</div>
+          <div id="history-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">live chat</div>
+        <div style="font-size:11px;color:#333;font-family:'Space Mono',monospace;" id="chat-count">0 msgs</div>
+      </div>
+
+      <div class="chat-area" id="chat-area">
+        <div class="chat-msg mod">
+          <div class="chat-avatar">M</div>
+          <div class="chat-body">
+            <div class="chat-name">StreamBot</div>
+            <div class="chat-text">Welcome! Tips go straight to StreamElements alerts.</div>
+          </div>
+        </div>
+        <div class="chat-msg user1">
+          <div class="chat-avatar">AK</div>
+          <div class="chat-body">
+            <div class="chat-name">arjun_k</div>
+            <div class="chat-text">bro the setup looks clean!</div>
+          </div>
+        </div>
+        <div class="chat-msg user2">
+          <div class="chat-avatar">PR</div>
+          <div class="chat-body">
+            <div class="chat-name">priya_r</div>
+            <div class="chat-text">love the new overlay</div>
+          </div>
+        </div>
+        <div class="chat-msg user3">
+          <div class="chat-avatar">VT</div>
+          <div class="chat-body">
+            <div class="chat-name">virat_t</div>
+            <div class="chat-text">hype hype hype</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="send a message..." onkeydown="if(event.key==='Enter')sendChat()" />
+        <button class="chat-send" onclick="sendChat()" aria-label="send">
+          <i class="ti ti-send" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="recent-tips">
+        <div class="rt-header">top tips today</div>
+        <div id="rt-list">
+          <div class="rt-item"><span class="rt-name">rahul_d</span><span class="rt-amt">₹999</span></div>
+          <div class="rt-item"><span class="rt-name">sneha_k</span><span class="rt-amt">₹499</span></div>
+          <div class="rt-item"><span class="rt-name">ankit_s</span><span class="rt-amt">₹199</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const EDGE_URL = 'YOUR_SUPABASE_EDGE_URL';
+let state = {name:'',email:'',amount:0,msg:''};
+let tipHistory = [];
+let chatMsgCount = 4;
+let currentStep = 1;
+
+function pickAmt(val, el) {
+  document.querySelectorAll('.amt-chip').forEach(c=>c.classList.remove('sel'));
+  if(val===0){
+    el.classList.add('sel');
+    document.getElementById('f-amount').value='';
+    document.getElementById('f-amount').focus();
+  } else {
+    el.classList.add('sel');
+    document.getElementById('f-amount').value=val;
+  }
+}
+
+function showErr(id,show){
+  document.getElementById('e-'+id).style.display=show?'block':'none';
+  document.getElementById('f-'+id).classList.toggle('err-i',show);
+}
+
+function goStep(n){
+  if(n===2){
+    const name=document.getElementById('f-name').value.trim();
+    const email=document.getElementById('f-email').value.trim();
+    const amt=parseFloat(document.getElementById('f-amount').value);
+    let ok=true;
+    if(!name){showErr('name',true);ok=false;}else showErr('name',false);
+    if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('email',true);ok=false;}else showErr('email',false);
+    if(!amt||amt<1){showErr('amount',true);ok=false;}else showErr('amount',false);
+    if(!ok)return;
+    state={name,email,amount:amt,msg:document.getElementById('f-msg').value.trim()};
+    document.getElementById('r-name').textContent=name;
+    document.getElementById('r-email').textContent=email;
+    document.getElementById('r-amt').textContent='₹'+amt.toFixed(0);
+    document.getElementById('r-msg').textContent=state.msg||'(none)';
+    document.getElementById('pay-show-amt').textContent='₹'+amt.toFixed(0);
+  }
+  currentStep=n;
+  for(let i=1;i<=4;i++){
+    document.getElementById('step'+i).classList.toggle('visible',i===n);
+    const sp=document.getElementById('sp'+i);
+    if(i<n){sp.className='step-pip done';sp.innerHTML='<i class="ti ti-check" style="font-size:10px"></i>';}
+    else if(i===n){sp.className='step-pip active-pip';sp.textContent=i;}
+    else{sp.className='step-pip';sp.textContent=i;}
+    if(i<4)document.getElementById('sl'+i).className='step-line-h'+(i<n?' done':'');
+  }
+}
+
+async function doPay(){
+  const btn=document.getElementById('pay-btn');
+  const txt=document.getElementById('pay-txt');
+  const spin=document.getElementById('pay-spin');
+  const back=document.getElementById('back-btn2');
+  btn.disabled=true;back.disabled=true;
+  txt.textContent='processing...';
+  spin.style.display='block';
+
+  await new Promise(r=>setTimeout(r,1600));
+  txt.textContent='firing alert...';
+
+  let logs=[];
+  let ok=false;
+
+  logs.push({t:'info',m:'→ cashfree payment confirmed'});
+  logs.push({t:'info',m:'→ calling supabase edge fn'});
+
+  try{
+    const res=await fetch(EDGE_URL+'/test',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:state.name,email:state.email,amount:state.amount,message:state.msg})
+    });
+    const data=await res.json();
+    if(res.ok&&data.success){
+      logs.push({t:'ok',m:'✓ edge fn 200 OK'});
+      logs.push({t:'ok',m:'✓ streamelements alert fired'});
+      ok=true;
+    } else {
+      logs.push({t:'err',m:'✗ se error: '+(data.error||JSON.stringify(data))});
+    }
+  } catch(e){
+    logs.push({t:'err',m:'✗ fetch failed — set EDGE_URL'});
+    logs.push({t:'info',m:'ℹ simulating success for demo'});
+    ok=true;
+  }
+
+  spin.style.display='none';
+  btn.disabled=false;back.disabled=false;
+
+  document.getElementById('log-mini').innerHTML=logs.map(l=>`<div class="lm-${l.t}">${l.m}</div>`).join('');
+
+  if(ok){
+    addTipToChat(state.name,state.amount,state.msg);
+    showBanner(state.name,state.amount);
+    tipHistory.unshift({name:state.name,amount:state.amount,ts:new Date()});
+    renderHistory();
+    updateTopTips(state.name,state.amount);
+  }
+
+  goStep(4);
+}
+
+function showBanner(name,amt){
+  const b=document.getElementById('tip-banner');
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('tip-banner-av').textContent=initials;
+  document.getElementById('tip-banner-name').textContent=name;
+  document.getElementById('tip-banner-amt').textContent='₹'+Math.round(amt);
+  b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'),5000);
+}
+
+function addTipToChat(name,amt,msg){
+  const area=document.getElementById('chat-area');
+  const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const div=document.createElement('div');
+  div.className='chat-msg tip-msg';
+  div.innerHTML=`<div class="chat-avatar">${initials}</div><div class="chat-body"><div class="chat-name">${name} <span style="font-size:10px;background:#26215c;color:#afa9ec;border-radius:4px;padding:1px 5px;font-family:'Space Mono',monospace">₹${Math.round(amt)}</span></div><div class="chat-text">${msg||'just sent a tip!'}</div></div>`;
+  area.appendChild(div);
+  chatMsgCount++;
+  document.getElementById('chat-count').textContent=chatMsgCount+' msgs';
+  area.scrollTop=area.scrollHeight;
+}
+
+function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const val=inp.value.trim();
+  if(!val)return;
+  const area=document.getElementById('chat-area');
+  const div=document.createElement('div');
+  div.className='chat-msg user1';
+  div.innerHTML=`<div class="chat-avatar">ME</div><div class="chat-body"><div class="chat-name">you</div><div class="chat-text">${val}</div></div>`;
+  area.appendChild(div);
+  chatMsgCount++;
+  document.getElementById('chat-count').textContent=chatMsgCount+' msgs';
+  area.scrollTop=area.scrollHeight;
+  inp.value='';
+}
+
+function renderHistory(){
+  const hl=document.getElementById('history-list');
+  if(tipHistory.length===0){hl.innerHTML='<div style="font-size:11px;color:#333;padding:8px 0;">no tips yet</div>';return;}
+  hl.innerHTML=tipHistory.map(t=>`
+    <div class="rv-row">
+      <span class="rv-label">${t.name}</span>
+      <span class="rv-val" style="font-family:'Space Mono',monospace;color:#534ab7">₹${Math.round(t.amount)}</span>
+    </div>`).join('');
+}
+
+function updateTopTips(name,amt){
+  const list=document.getElementById('rt-list');
+  const item=document.createElement('div');
+  item.className='rt-item';
+  item.innerHTML=`<span class="rt-name">${name}</span><span class="rt-amt">₹${Math.round(amt)}</span>`;
+  list.insertBefore(item,list.firstChild);
+}
+
+function switchTab(t){
+  document.getElementById('tab-tip').classList.toggle('active',t==='tip');
+  document.getElementById('tab-history').classList.toggle('active',t==='history');
+  document.getElementById('panel-tip').style.display=t==='tip'?'block':'none';
+  document.getElementById('panel-history').style.display=t==='history'?'block':'none';
+  if(t==='history')renderHistory();
+}
+
+function resetFlow(){
+  state={name:'',email:'',amount:0,msg:''};
+  document.getElementById('f-name').value='';
+  document.getElementById('f-email').value='';
+  document.getElementById('f-amount').value='';
+  document.getElementById('f-msg').value='';
+  document.querySelectorAll('.amt-chip').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('pay-txt').textContent='pay now';
+  goStep(1);
+}
+
+setInterval(()=>{
+  const v=parseInt(document.getElementById('viewer-count').textContent.replace(',',''));
+  const delta=Math.floor(Math.random()*10)-4;
+  document.getElementById('viewer-count').textContent=(v+delta).toLocaleString();
+},3000);
+
+renderHistory();
+</script>
