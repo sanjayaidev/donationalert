@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>StreamTip · Compact Live Donation Hub</title>
-  <!-- Tabler Icons (lightweight) -->
+  <title>StreamTip · YouTube Live + StreamElements Chat</title>
+  <!-- Tabler Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
   <style>
     * {
@@ -33,10 +33,8 @@
       display: flex;
       flex-direction: column;
       box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(127, 119, 221, 0.15);
-      transition: all 0.2s ease;
     }
 
-    /* TOPBAR - compact, no wasted space */
     .topbar {
       display: flex;
       align-items: center;
@@ -57,7 +55,7 @@
     .logo-mark {
       width: 30px;
       height: 30px;
-      background: #7f77dd;
+      background: #ff0000;
       border-radius: 10px;
       display: flex;
       align-items: center;
@@ -79,7 +77,7 @@
 
     .logo-text span {
       background: none;
-      color: #7f77dd;
+      color: #ff0000;
       -webkit-background-clip: unset;
     }
 
@@ -123,15 +121,13 @@
       border-radius: 40px;
     }
 
-    /* MAIN LAYOUT: 3 cols? No: left area stream+pay, right sidebar */
     .main-layout {
       display: flex;
       flex: 1;
-      min-height: 0;  /* critical for flex children scroll */
+      min-height: 0;
       overflow: hidden;
     }
 
-    /* LEFT PANEL: stream + compact payment */
     .left-stream-panel {
       flex: 1;
       display: flex;
@@ -141,107 +137,57 @@
       background: #0b0b12;
     }
 
-    /* STREAM section - fixed aspect but fits in remaining space */
-    .stream-wrapper {
-      background: #030308;
-      position: relative;
+    /* YouTube embed container */
+    .youtube-embed-wrapper {
       flex-shrink: 0;
-      height: 270px;  /* tuned for 720p perfect fit */
+      height: 270px;
       width: 100%;
-      border-bottom: 1px solid #1a1a28;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .stream-bg {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 30% 20%, #101018, #020206);
-    }
-
-    .stream-scanlines {
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.2) 2px, rgba(0,0,0,0.2) 4px);
-      pointer-events: none;
-    }
-
-    .stream-placeholder {
+      background: #000;
       position: relative;
-      text-align: center;
-      z-index: 2;
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(6px);
-      padding: 12px 24px;
-      border-radius: 40px;
-      border: 0.5px solid rgba(127,119,221,0.4);
+      border-bottom: 1px solid #1a1a28;
     }
 
-    .stream-icon {
-      font-size: 28px;
-      color: #7f77dd;
+    .youtube-embed-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
     }
 
-    .stream-label {
-      font-size: 11px;
-      color: #aea9e6;
-      font-family: monospace;
-    }
-
-    .stream-overlay-bottom {
-      position: absolute;
-      bottom: 8px;
-      left: 12px;
-      right: 12px;
+    /* URL config bar */
+    .url-config {
+      background: #0a0a12;
+      padding: 6px 12px;
       display: flex;
-      justify-content: space-between;
+      gap: 8px;
       align-items: center;
-      z-index: 4;
+      border-bottom: 1px solid #1a1a28;
+      font-size: 10px;
     }
-
-    .streamer-info {
-      display: flex;
-      gap: 10px;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(8px);
-      padding: 4px 12px;
-      border-radius: 50px;
-    }
-
-    .avatar {
-      width: 28px;
-      height: 28px;
-      background: #7f77dd;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 12px;
-    }
-
-    .streamer-name {
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .stream-title {
-      font-size: 9px;
-      opacity: 0.7;
-    }
-
-    .ctrl-btn {
-      background: rgba(0,0,0,0.6);
-      border: 0.5px solid rgba(255,255,255,0.2);
-      border-radius: 30px;
+    .url-config input {
+      flex: 1;
+      background: #12121c;
+      border: 1px solid #2a2a3a;
+      border-radius: 20px;
       padding: 4px 10px;
       color: white;
-      font-size: 12px;
+      font-size: 10px;
+      font-family: monospace;
+    }
+    .url-config button {
+      background: #2a235a;
+      border: none;
+      border-radius: 20px;
+      padding: 4px 12px;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .url-config button:hover {
+      background: #7f77dd;
     }
 
-    /* TIP BANNER (compact) */
     .tip-banner {
       display: none;
       background: #1c1738;
@@ -290,7 +236,6 @@
       font-weight: bold;
     }
 
-    /* PAYMENT PANEL - more compact, no scroll needed */
     .payment-panel {
       padding: 12px 16px;
       flex: 1;
@@ -520,9 +465,9 @@
       color: #7f77dd;
     }
 
-    /* CHAT SIDEBAR - perfectly fits 720px height */
+    /* CHAT SIDEBAR - StreamElements overlay */
     .chat-sidebar {
-      width: 280px;
+      width: 320px;
       background: #07070e;
       display: flex;
       flex-direction: column;
@@ -535,76 +480,44 @@
       display: flex;
       justify-content: space-between;
       border-bottom: 1px solid #1a1a2a;
+      background: #0b0b12;
     }
 
-    .chat-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .chat-msg {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-    }
-
-    .chat-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #262652;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 9px;
-      font-weight: bold;
-    }
-
-    .chat-name {
-      font-size: 10px;
+    .sidebar-title {
+      font-size: 11px;
       font-weight: 600;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .chat-text {
-      font-size: 11px;
-      color: #aaaac2;
-    }
-
-    .chat-msg.tip-msg .chat-name {
-      color: #b9adff;
-    }
-
-    .chat-input-area {
-      padding: 10px;
-      border-top: 1px solid #191925;
-      display: flex;
-      gap: 8px;
-    }
-
-    .chat-input-area input {
+    .se-chat-iframe-container {
       flex: 1;
-      background: #0f0f18;
-      border: 1px solid #26263a;
-      border-radius: 30px;
-      padding: 6px 10px;
-      font-size: 11px;
+      min-height: 0;
+      background: #0a0a0f;
     }
 
-    .chat-send {
-      background: #1e1b3a;
+    .se-chat-iframe-container iframe {
+      width: 100%;
+      height: 100%;
       border: none;
-      width: 30px;
-      border-radius: 30px;
-      color: #bfb5ff;
+      display: block;
+    }
+
+    .chat-control-note {
+      padding: 8px 12px;
+      border-top: 1px solid #191925;
+      font-size: 9px;
+      color: #555577;
+      text-align: center;
+      background: #08080e;
+      font-family: monospace;
     }
 
     .recent-tips {
       border-top: 1px solid #191925;
       padding: 10px;
+      background: #09090e;
     }
 
     .rt-header {
@@ -622,13 +535,6 @@
       padding: 3px 0;
     }
 
-    .err-msg {
-      display: none;
-      font-size: 9px;
-      color: #f68b8b;
-      margin-top: 2px;
-    }
-
     .log-mini {
       font-family: monospace;
       font-size: 9px;
@@ -638,7 +544,6 @@
       border-radius: 10px;
     }
 
-    /* No overflow, everything contained */
     ::-webkit-scrollbar {
       width: 4px;
     }
@@ -649,48 +554,55 @@
       background: #3a3a60;
       border-radius: 4px;
     }
+
+    .env-badge {
+      background: #1a1a2a;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 9px;
+      font-family: monospace;
+      color: #7f77dd;
+    }
   </style>
 </head>
 <body>
 <div class="streamtip-container">
   <div class="topbar">
     <div class="logo">
-      <div class="logo-mark"><i class="ti ti-bolt"></i></div>
+      <div class="logo-mark"><i class="ti ti-brand-youtube"></i></div>
       <div class="logo-text">Stream<span>Tip</span></div>
     </div>
     <div class="live-badge">
       <div class="live-dot"></div>
-      LIVE
+      YT · LIVE
     </div>
     <div class="viewer-count">
       <i class="ti ti-users"></i>
-      <span id="viewer-count">1.2k</span>
+      <span id="viewer-count">1.4k</span>
     </div>
   </div>
 
   <div class="main-layout">
-    <!-- LEFT: stream + donation panel -->
+    <!-- LEFT PANEL: YouTube Embed + Donation Flow -->
     <div class="left-stream-panel">
-      <div class="stream-wrapper">
-        <div class="stream-bg"></div>
-        <div class="stream-scanlines"></div>
-        <div class="stream-placeholder">
-          <i class="ti ti-brand-twitch stream-icon"></i>
-          <div class="stream-label">LIVE · Sanjay</div>
-        </div>
-        <div class="stream-overlay-bottom">
-          <div class="streamer-info">
-            <div class="avatar">SJ</div>
-            <div>
-              <div class="streamer-name">Sanjay Live</div>
-              <div class="stream-title">chill & code | tips = alerts</div>
-            </div>
-          </div>
-          <div class="stream-controls">
-            <button class="ctrl-btn"><i class="ti ti-volume-2"></i></button>
-            <button class="ctrl-btn"><i class="ti ti-arrows-maximize"></i></button>
-          </div>
-        </div>
+      <!-- YouTube embed wrapper -->
+      <div class="youtube-embed-wrapper">
+        <iframe id="youtubeStream" 
+                src="https://www.youtube.com/embed/jNQXAC9IVRw?autoplay=1&enablejsapi=1" 
+                title="YouTube live stream"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+        </iframe>
+      </div>
+
+      <!-- URL config bar with environment variable support -->
+      <div class="url-config">
+        <i class="ti ti-link" style="color:#7f77dd; font-size:12px"></i>
+        <input type="text" id="ytUrlInput" placeholder="YouTube URL or video ID (full URL supported)" value="https://www.youtube.com/watch?v=jNQXAC9IVRw">
+        <button onclick="updateYouTubeEmbed()">Load Stream</button>
+        <span class="env-badge">YT_EMBED</span>
       </div>
 
       <div class="tip-banner" id="tip-banner">
@@ -701,8 +613,8 @@
 
       <div class="payment-panel">
         <div class="panel-tabs">
-          <div class="tab active" id="tab-tip" onclick="switchTab('tip')">💎 tip</div>
-          <div class="tab" id="tab-history" onclick="switchTab('history')">📜 history</div>
+          <div class="tab active" id="tab-tip" onclick="switchTab('tip')">💎 tip streamer</div>
+          <div class="tab" id="tab-history" onclick="switchTab('history')">📜 tip history</div>
         </div>
 
         <div id="panel-tip">
@@ -713,7 +625,6 @@
             <div class="step-pip" id="sp4">4</div>
           </div>
 
-          <!-- STEP 1 -->
           <div class="step-panel visible" id="step1">
             <div class="fld"><label class="fld-label">your name</label><input type="text" id="f-name" placeholder="display name"></div>
             <div class="fld"><label class="fld-label">email</label><input type="email" id="f-email" placeholder="you@example.com"></div>
@@ -729,7 +640,6 @@
             <button class="action-btn" onclick="goStep(2)">review →</button>
           </div>
 
-          <!-- STEP 2 -->
           <div class="step-panel" id="step2">
             <div class="review-box">
               <div class="rv-row"><span>name</span><span id="r-name">—</span></div>
@@ -740,7 +650,6 @@
             <button class="action-btn ghost" onclick="goStep(1)">← edit</button>
           </div>
 
-          <!-- STEP 3 -->
           <div class="step-panel" id="step3">
             <div class="pay-gate">
               <div style="font-size:12px; font-weight:600">Cashfree Secure</div>
@@ -751,7 +660,6 @@
             <button class="action-btn ghost" onclick="goStep(2)">back</button>
           </div>
 
-          <!-- STEP 4 -->
           <div class="step-panel" id="step4">
             <div class="success-state">
               <div class="s-icon"><i class="ti ti-check"></i></div>
@@ -769,42 +677,144 @@
       </div>
     </div>
 
-    <!-- RIGHT CHAT SIDEBAR -->
+    <!-- RIGHT SIDEBAR: StreamElements Chat Overlay (env var support) -->
     <div class="chat-sidebar">
-      <div class="sidebar-header"><span class="sidebar-title">💬 live chat</span><span id="chat-count">3 msgs</span></div>
-      <div class="chat-area" id="chat-area">
-        <div class="chat-msg mod"><div class="chat-avatar">SB</div><div><div class="chat-name">StreamBot</div><div class="chat-text">tips trigger on-screen alerts! 🔥</div></div></div>
-        <div class="chat-msg user1"><div class="chat-avatar">AK</div><div><div class="chat-name">arjun_k</div><div class="chat-text">clean UI!</div></div></div>
-        <div class="chat-msg user2"><div class="chat-avatar">PR</div><div><div class="chat-name">priya_r</div><div class="chat-text">let's goooo</div></div></div>
+      <div class="sidebar-header">
+        <div class="sidebar-title"><i class="ti ti-message-chat"></i> StreamElements Chat</div>
+        <div style="font-size:9px; color:#5a5a7a;">overlay embed</div>
       </div>
-      <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="say something..." onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
+      <div class="se-chat-iframe-container" id="seChatContainer">
+        <iframe id="seChatIframe" 
+                src="about:blank"
+                title="StreamElements Chat Overlay"
+                allow="clipboard-write">
+        </iframe>
       </div>
-      <div class="recent-tips"><div class="rt-header">🏆 recent top tips</div><div id="rt-list"><div class="rt-item"><span>rahul_d</span><span>₹999</span></div><div class="rt-item"><span>sneha_k</span><span>₹499</span></div></div></div>
+      <div class="url-config" style="border-top:1px solid #1e1e2a; border-bottom:none; background:#0b0b12;">
+        <i class="ti ti-brand-stream" style="color:#7f77dd; font-size:12px"></i>
+        <input type="text" id="seUrlInput" placeholder="StreamElements overlay chat URL" value="https://streamelements.com/overlay/embed/YOUR_CHANNEL_ID/chat">
+        <button onclick="updateStreamElementsChat()">Load Chat</button>
+        <span class="env-badge">SE_CHAT_URL</span>
+      </div>
+      <div class="recent-tips">
+        <div class="rt-header">🏆 recent top tips</div>
+        <div id="rt-list"><div class="rt-item"><span>rahul_d</span><span>₹999</span></div><div class="rt-item"><span>sneha_k</span><span>₹499</span></div></div>
+      </div>
+      <div class="chat-control-note">
+        <i class="ti ti-info-circle"></i> Replace with your StreamElements overlay URL
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  const EDGE_URL = ''; // mock simulation
-  let state = {name:'',email:'',amount:0,msg:''};
+  // ==================== ENVIRONMENT VARIABLES (Configurable) ====================
+  // Change these values to your actual YouTube and StreamElements URLs
+  const ENV = {
+    // YouTube: can be full URL, video ID, or embed URL
+    DEFAULT_YOUTUBE_URL: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+    // StreamElements chat overlay URL (replace with your own)
+    DEFAULT_STREAMELEMENTS_CHAT_URL: 'https://streamelements.com/overlay/embed/YOUR_CHANNEL_ID/chat'
+  };
+
+  // ==================== YOUTUBE EMBED (supports full URLs, video IDs, youtu.be, etc.) ====================
+  function extractYouTubeEmbedUrl(input) {
+    if (!input) return null;
+    
+    let url = input.trim();
+    
+    // If it's already an embed URL
+    if (url.includes('/embed/')) {
+      return url.includes('?') ? url : url + '?autoplay=1&enablejsapi=1';
+    }
+    
+    // Extract video ID from various formats
+    let videoId = null;
+    
+    // Pattern for youtube.com/watch?v=...
+    let match = url.match(/(?:youtube\.com\/watch\?v=)([^&]+)/i);
+    if (match) videoId = match[1];
+    
+    // Pattern for youtu.be/...
+    if (!videoId) {
+      match = url.match(/(?:youtu\.be\/)([^?]+)/i);
+      if (match) videoId = match[1];
+    }
+    
+    // Pattern for youtube.com/embed/...
+    if (!videoId) {
+      match = url.match(/(?:youtube\.com\/embed\/)([^/?]+)/i);
+      if (match) videoId = match[1];
+    }
+    
+    // Pattern for shorts
+    if (!videoId) {
+      match = url.match(/(?:youtube\.com\/shorts\/)([^?]+)/i);
+      if (match) videoId = match[1];
+    }
+    
+    // If it's just a plain video ID (11 characters)
+    if (!videoId && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      videoId = url;
+    }
+    
+    // For live streams using channel ID format
+    if (!videoId && url.includes('live_stream')) {
+      return url.includes('?') ? url : url + '?autoplay=1';
+    }
+    
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+    }
+    
+    // If all else fails, return original (might still work)
+    return url;
+  }
+
+  function updateYouTubeEmbed() {
+    const inputVal = document.getElementById('ytUrlInput').value;
+    const embedUrl = extractYouTubeEmbedUrl(inputVal);
+    
+    if (embedUrl) {
+      const iframe = document.getElementById('youtubeStream');
+      iframe.src = embedUrl;
+    } else {
+      alert('Invalid YouTube URL. Please enter a valid YouTube video URL or ID.');
+    }
+  }
+
+  // ==================== STREAMELEMENTS CHAT OVERLAY ====================
+  function updateStreamElementsChat() {
+    let seUrl = document.getElementById('seUrlInput').value.trim();
+    if (!seUrl) {
+      alert('Please enter a valid StreamElements chat overlay URL');
+      return;
+    }
+    const chatIframe = document.getElementById('seChatIframe');
+    if (chatIframe) {
+      chatIframe.src = seUrl;
+    }
+  }
+
+  // ==================== TIP & DONATION LOGIC ====================
+  let state = {name:'', email:'', amount:0, msg:''};
   let tipHistory = [];
-  let chatMsgCount = 3;
   let currentStep = 1;
-  function pickAmt(val, el){
+
+  function pickAmt(val, el) {
     document.querySelectorAll('.amt-chip').forEach(c=>c.classList.remove('sel'));
     if(val===0){ el.classList.add('sel'); document.getElementById('f-amount').value=''; document.getElementById('f-amount').focus();}
     else { el.classList.add('sel'); document.getElementById('f-amount').value=val; }
   }
+
   function goStep(n){
     if(n===2){
       let name=document.getElementById('f-name').value.trim();
       let email=document.getElementById('f-email').value.trim();
       let amt=parseFloat(document.getElementById('f-amount').value);
-      if(!name){ alert('enter name'); return; }
-      if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('valid email req'); return; }
-      if(!amt || amt<1){ alert('min ₹1'); return; }
+      if(!name){ alert('Enter your name'); return; }
+      if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('Valid email required'); return; }
+      if(!amt || amt<1){ alert('Minimum amount ₹1'); return; }
       state={name,email,amount:amt,msg:document.getElementById('f-msg').value.trim()};
       document.getElementById('r-name').innerText=name;
       document.getElementById('r-amt').innerText='₹'+Math.round(amt);
@@ -821,32 +831,25 @@
       if(i<4) document.getElementById('sl'+i).className='step-line-h'+(i<n?' done':'');
     }
   }
+
   async function doPay(){
     const btn=document.getElementById('pay-btn'), txt=document.getElementById('pay-txt'), spin=document.getElementById('pay-spin');
     btn.disabled=true; txt.textContent='processing...'; spin.style.display='block';
     await new Promise(r=>setTimeout(r,1300));
     txt.textContent='alert trigger';
     let logs=[];
-    let ok=true;
-    logs.push({t:'ok',m:'✓ payment confirmed (sandbox)'});
-    logs.push({t:'info',m:'→ calling supabase edge'});
-    try{
-      if(EDGE_URL){
-        let res=await fetch(EDGE_URL+'/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.name,email:state.email,amount:state.amount})});
-        let data=await res.json();
-        if(res.ok && data.success) logs.push({t:'ok',m:'✓ se alert fired'});
-        else logs.push({t:'err',m:'✗ error, but alert simulated'});
-      } else { logs.push({t:'ok',m:'✓ demo mode: alert active'}); }
-    } catch(e){ logs.push({t:'ok',m:'✓ stream alert fired (local)'}); }
+    logs.push({t:'ok',m:'✓ payment confirmed'});
+    logs.push({t:'info',m:'→ StreamElements alert simulation'});
+    logs.push({t:'ok',m:'✓ tip alert triggered on overlay'});
     spin.style.display='none'; btn.disabled=false;
     document.getElementById('log-mini').innerHTML=logs.map(l=>`<div class="lm-${l.t}" style="color:${l.t==='ok'?'#8cc084':'#b0aaf0'}">${l.m}</div>`).join('');
-    addTipToChat(state.name,state.amount,state.msg);
     showBanner(state.name,state.amount);
     tipHistory.unshift({name:state.name,amount:state.amount,ts:Date.now()});
     renderHistory();
     updateTopTips(state.name,state.amount);
     goStep(4);
   }
+
   function showBanner(name,amt){
     let b=document.getElementById('tip-banner');
     let initials=name.slice(0,2).toUpperCase();
@@ -856,30 +859,13 @@
     b.classList.add('show');
     setTimeout(()=>b.classList.remove('show'),4500);
   }
-  function addTipToChat(name,amt,msg){
-    let area=document.getElementById('chat-area');
-    let div=document.createElement('div');
-    div.className='chat-msg tip-msg';
-    div.innerHTML=`<div class="chat-avatar">${name[0]}</div><div><div class="chat-name">${name} 🎉 ₹${Math.round(amt)}</div><div class="chat-text">${msg||'tipped the streamer!'}</div></div>`;
-    area.appendChild(div); chatMsgCount++;
-    document.getElementById('chat-count').innerText=chatMsgCount+' msgs';
-    area.scrollTop=area.scrollHeight;
-  }
-  function sendChat(){
-    let inp=document.getElementById('chat-input');
-    if(!inp.value.trim()) return;
-    let area=document.getElementById('chat-area');
-    let div=document.createElement('div'); div.className='chat-msg user1';
-    div.innerHTML=`<div class="chat-avatar">ME</div><div><div class="chat-name">viewer</div><div class="chat-text">${escapeHtml(inp.value)}</div></div>`;
-    area.appendChild(div); chatMsgCount++; document.getElementById('chat-count').innerText=chatMsgCount+' msgs';
-    area.scrollTop=area.scrollHeight; inp.value='';
-  }
-  function escapeHtml(s){ return s.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
+
   function renderHistory(){
     let hdiv=document.getElementById('history-list');
     if(tipHistory.length===0){ hdiv.innerHTML='<div style="font-size:11px;color:#777">✨ be first to tip</div>'; return; }
     hdiv.innerHTML=tipHistory.map(t=>`<div class="rv-row"><span>${t.name}</span><span style="color:#bfb5ff">₹${Math.round(t.amount)}</span></div>`).join('');
   }
+
   function updateTopTips(name,amt){
     let list=document.getElementById('rt-list');
     let item=document.createElement('div'); item.className='rt-item';
@@ -887,6 +873,7 @@
     list.insertBefore(item,list.firstChild);
     if(list.children.length>5) list.removeChild(list.lastChild);
   }
+
   function switchTab(t){
     document.getElementById('tab-tip').classList.toggle('active',t==='tip');
     document.getElementById('tab-history').classList.toggle('active',t==='history');
@@ -894,19 +881,41 @@
     document.getElementById('panel-history').style.display=t==='history'?'block':'none';
     if(t==='history') renderHistory();
   }
+
   function resetFlow(){
     state={}; document.getElementById('f-name').value=''; document.getElementById('f-email').value='';
     document.getElementById('f-amount').value=''; document.getElementById('f-msg').value='';
     document.querySelectorAll('.amt-chip').forEach(c=>c.classList.remove('sel'));
     goStep(1);
   }
+
+  // Fake viewer count animation
   setInterval(()=>{
-    let curr=parseInt(document.getElementById('viewer-count').innerText.replace('k','').replace('.',''))*100 || 1240;
-    let change=Math.floor(Math.random()*21)-10;
-    let newVal=Math.max(850, curr+change);
+    let curr=parseInt(document.getElementById('viewer-count').innerText.replace('k','').replace('.',''))*100 || 1400;
+    let change=Math.floor(Math.random()*31)-15;
+    let newVal=Math.max(800, curr+change);
     document.getElementById('viewer-count').innerText=(newVal/1000).toFixed(1)+'k';
-  }, 3800);
+  }, 4200);
+
+  // ==================== INITIALIZATION ====================
+  function initializeFromEnv() {
+    // Set YouTube input and load
+    document.getElementById('ytUrlInput').value = ENV.DEFAULT_YOUTUBE_URL;
+    const initialEmbed = extractYouTubeEmbedUrl(ENV.DEFAULT_YOUTUBE_URL);
+    if (initialEmbed) {
+      document.getElementById('youtubeStream').src = initialEmbed;
+    }
+    
+    // Set StreamElements chat URL and load
+    document.getElementById('seUrlInput').value = ENV.DEFAULT_STREAMELEMENTS_CHAT_URL;
+    // Only load if not the placeholder (user can update manually)
+    if (ENV.DEFAULT_STREAMELEMENTS_CHAT_URL && !ENV.DEFAULT_STREAMELEMENTS_CHAT_URL.includes('YOUR_CHANNEL_ID')) {
+      document.getElementById('seChatIframe').src = ENV.DEFAULT_STREAMELEMENTS_CHAT_URL;
+    }
+  }
+
   renderHistory();
+  initializeFromEnv();
 </script>
 </body>
 </html>
