@@ -896,11 +896,14 @@
     }
 
     // Step 2: Open Cashfree checkout
-    const cashfree = Cashfree({ mode: 'sandbox' }); // ✅ must match your keys
-    await cashfree.checkout({
-      paymentSessionId: data.payment_session_id,  // ✅ exact field name
-      returnUrl: window.location.origin + '/thankyou?order_id=' + data.order_id,
-    });
+    const cashfree = Cashfree({
+  mode: 'production'
+});
+
+await cashfree.checkout({
+  paymentSessionId: data.payment_session_id,
+  returnUrl: `${window.location.origin}/thankyou?order_id=${data.order_id}`,
+});
 
   } catch (err) {
     console.error(err);
