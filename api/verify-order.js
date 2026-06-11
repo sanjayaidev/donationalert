@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   try {
     // 1. Fetch order status from Cashfree
     const cfRes = await fetch(
-      `https://sandbox.cashfree.com/pg/orders/${order_id}`,
+      `https://api.cashfree.com/pg/orders/${order_id}`,
       {
         headers: {
           'x-api-version': '2023-08-01',
