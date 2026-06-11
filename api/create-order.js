@@ -8,22 +8,20 @@ export default async function handler(req, res) {
   }
 
   const orderId = 'tip-' + Date.now();
-
-  // Auto-detect base URL from request
-  const origin = req.headers.origin || req.headers.host;
+  const origin  = req.headers.origin || req.headers.host;
   const baseUrl = origin.startsWith('http') ? origin : 'https://' + origin;
 
   try {
     const cfRes = await fetch('https://sandbox.cashfree.com/pg/orders', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-version': '2023-08-01',
+        'Content-Type':    'application/json',
+        'x-api-version':   '2023-08-01',
         'x-client-id':     process.env.CASHFREE_APP_ID,
         'x-client-secret': process.env.CASHFREE_SECRET_KEY,
       },
       body: JSON.stringify({
-        order_id: orderId,
+        order_id:     orderId,
         order_amount: amount,
         order_currency: 'INR',
         customer_details: {
@@ -44,24 +42,34 @@ export default async function handler(req, res) {
 
     const order = await cfRes.json();
 
-    console.log('CF Status:', cfRes.status);
-    console.log('CF Response:', JSON.stringify(order));
-
     if (!cfRes.ok) {
       return res.status(500).json({
-        error: 'Failed to create order',
-        cf_status: cfRes.status,
+        error:       'Failed to create order',
+        cf_status:   cfRes.status,
         cf_response: order
       });
     }
 
+    // Fire and forget — edge polls CF and logs result
+    fetch(process.env.SUPABASE_FUNCTIONS_URL + '/poll', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret:         process.env.LOG_SECRET,
+        order_id:       order.order_id,
+        amount,
+        customer_name:  name,
+        customer_email: email,
+        message:        message || '',
+      }),
+    }).catch(() => {});
+
     return res.status(200).json({
-      order_id: order.order_id,
+      order_id:           order.order_id,
       payment_session_id: order.payment_session_id,
     });
 
   } catch (err) {
-    console.error('Exception:', err.message);
     return res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
