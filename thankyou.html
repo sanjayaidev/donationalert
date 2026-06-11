@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment processing…</title>
+  <style>
+    body { background:#040407; color:#e8e8f8; font-family:'JetBrains Mono',monospace;
+           display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .card { background:#09090f; border:1px solid #1c1c2e; border-radius:16px;
+            padding:32px 28px; text-align:center; max-width:340px; width:90%; }
+    .icon { font-size:40px; margin-bottom:12px; }
+    h2 { font-size:18px; margin:0 0 8px; }
+    p  { font-size:12px; color:#9090b8; margin:0 0 20px; line-height:1.6; }
+    .spinner { width:28px; height:28px; border:3px solid rgba(108,99,255,.2);
+               border-top-color:#6c63ff; border-radius:50%;
+               animation:spin .7s linear infinite; margin:0 auto 16px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .btn { display:inline-block; background:#6c63ff; color:#fff; border:none;
+           border-radius:10px; padding:10px 24px; font-size:13px; font-weight:700;
+           cursor:pointer; text-decoration:none; font-family:inherit; }
+    .success { color:#22d382; }
+    .error   { color:#ff3f3f; }
+    #log { font-size:10px; color:#5a5a80; margin-top:12px; line-height:1.8; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div id="state-pending">
+    <div class="spinner"></div>
+    <h2>Verifying payment…</h2>
+    <p>Please wait, confirming with Cashfree</p>
+  </div>
+  <div id="state-success" style="display:none">
+    <div class="icon">🎉</div>
+    <h2 class="success">Tip sent!</h2>
+    <p>Your donation will appear on stream shortly.</p>
+    <a class="btn" href="/">Send another tip</a>
+    <div id="log"></div>
+  </div>
+  <div id="state-fail" style="display:none">
+    <div class="icon">⚠️</div>
+    <h2 class="error">Payment not confirmed</h2>
+    <p id="fail-msg">Could not verify your payment. If money was deducted, please contact support.</p>
+    <a class="btn" href="/">Go back</a>
+  </div>
+</div>
+
+<script>
+(async () => {
+  const params   = new URLSearchParams(location.search);
+  const order_id = params.get('order_id');
+
+  if (!order_id) {
+    show('fail', 'No order ID in URL.');
+    return;
+  }
+
+  // Poll up to 8 times with 2s gaps (16s total — covers CF processing lag)
+  let attempts = 0;
+  const MAX    = 8;
+
+  async function poll() {
+    attempts++;
+    try {
+      const res  = await fetch('/api/verify-order', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id }),
+      });
+      const data = await res.json();
+
+      if (data.paid) {
+        show('success');
+        if (data.se_response) {
+          document.getElementById('log').textContent =
+            'SE: ' + (data.se_ok ? '✓ alert sent' : '✗ ' + JSON.stringify(data.se_response));
+        }
+        return;
+      }
+
+      // Still ACTIVE (payment window open) or processing
+      if (attempts < MAX) {
+        setTimeout(poll, 2000);
+      } else {
+        show('fail', `Status after ${MAX} checks: ${data.status || 'unknown'}`);
+      }
+    } catch (err) {
+      if (attempts < MAX) {
+        setTimeout(poll, 2000);
+      } else {
+        show('fail', 'Network error: ' + err.message);
+      }
+    }
+  }
+
+  poll();
+
+  function show(state, msg) {
+    document.getElementById('state-pending').style.display = 'none';
+    document.getElementById('state-success').style.display = state === 'success' ? 'block' : 'none';
+    document.getElementById('state-fail').style.display    = state === 'fail'    ? 'block' : 'none';
+    if (msg) document.getElementById('fail-msg').textContent = msg;
+  }
+})();
+</script>
+</body>
+</html>
