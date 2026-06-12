@@ -1,107 +1,42 @@
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-
-        p {
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .contact-info {
-            margin-top: 30px;
-        }
-
-        .contact-info h3 {
-            color: #333;
-        }
-
-        .contact-info p {
-            margin: 10px 0;
-        }
-
-        .contact-form {
-            margin-top: 30px;
-        }
-
-        .contact-form input,
-        .contact-form textarea {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-
-        .contact-form button {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .contact-form button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-
 <div class="container">
     <h1>Contact Us</h1>
 
     <p>
         We'd love to hear from you. If you have any questions, suggestions,
-        or need assistance, please feel free to contact us using the details below.
+        or need assistance regarding donations or stream alerts, feel free to contact us.
     </p>
 
     <div class="contact-info">
-        <h3>Contact Information</h3>
-        <p><strong>Email:</strong> your@email.com</p>
-        <p><strong>Phone:</strong> +91XXXXXXXXXX</p>
+        <h3>📩 Contact Information</h3>
+
+        <p>
+            <strong>Email:</strong>
+            <a href="mailto:workajaygamer@gmail.com?subject=Donation%20Support&body=Hello%20Ajay,%0A%0AI%20need%20help%20regarding%20my%20donation.">
+                workajaygamer@gmail.com
+            </a>
+        </p>
+
+        <p>
+            <strong>Phone:</strong>
+            <a href="tel:+91XXXXXXXXXX">
+                +91XXXXXXXXXX
+            </a>
+        </p>
     </div>
 
     <div class="contact-form">
-        <h3>Send Us a Message</h3>
-        <form action="#" method="post">
-            <input type="text" name="name" placeholder="Your Name" required>
+        <h3>💬 Send Us a Message</h3>
 
-            <input type="email" name="email" placeholder="Your Email" required>
+        <form action="mailto:workajaygamer@gmail.com" method="post" enctype="text/plain">
 
-            <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
+            <input type="text" name="Name" placeholder="Your Name" required>
+
+            <input type="email" name="Email" placeholder="Your Email" required>
+
+            <textarea name="Message" rows="5" placeholder="Your Message" required></textarea>
 
             <button type="submit">Send Message</button>
+
         </form>
     </div>
 </div>
-
-</body>
-</html>
-```
