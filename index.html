@@ -716,7 +716,7 @@
         <div class="sidebar-hdr-title"><i class="ti ti-message-chat"></i> Live Chat</div>
         <div style="font-size:9px;color:var(--text3);">StreamElements</div>
       </div>
-      <div class="se-iframe-wrap">
+      <div class="se-iframe-wrap" id="seChatWrap">
         <iframe id="seChatIframe"
                 src="about:blank"
                 title="StreamElements Chat Overlay"
@@ -849,9 +849,29 @@
 
   function initSEChat() {
     const url = SE_CHAT_HARDCODED;
-    document.getElementById('seUrlInput').value = url;
-    document.getElementById('seChatIframe').src = url;
-  }
+    const iframe = document.getElementById('seChatIframe');
+    const wrap = document.getElementById('seChatWrap'); // Add this ID to your HTML
+    
+    iframe.src = url;
+    
+    function fitChat() {
+        const W = wrap.offsetWidth;
+        const H = wrap.offsetHeight;
+        if (!W || !H) return;
+        
+        const NATIVE_W = 1920;
+        const scale = W / NATIVE_W;
+        
+        iframe.style.width = NATIVE_W + 'px';
+        iframe.style.height = Math.round(H / scale) + 'px';
+        iframe.style.transform = `scale(${scale})`;
+        iframe.style.transformOrigin = 'top left';
+    }
+    
+    fitChat();
+    window.addEventListener('resize', fitChat);
+    iframe.addEventListener('load', () => setTimeout(fitChat, 200));
+}
 
   function loadSE() {
     const url = document.getElementById('seUrlInput').value.trim();
