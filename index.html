@@ -845,11 +845,12 @@
   // ==========================================
   // STREAMELEMENTS — env-only + UI input
   // ==========================================
+  const SE_CHAT_HARDCODED = 'https://streamelements.com/overlay/6a2f903bf2ed77a9eab2af9e/-CfHBVXo37hUWEw8eZZ4MvlfzFtAeHOsfQgZjJWigVHG9XSI';
+
   function initSEChat() {
-    if (ENV.SE_CHAT_URL && !ENV.SE_CHAT_URL.includes('YOUR_CHANNEL')) {
-      document.getElementById('seChatIframe').src = ENV.SE_CHAT_URL;
-      document.getElementById('seUrlInput').value = ENV.SE_CHAT_URL;
-    }
+    const url = SE_CHAT_HARDCODED;
+    document.getElementById('seUrlInput').value = url;
+    document.getElementById('seChatIframe').src = url;
   }
 
   function loadSE() {
