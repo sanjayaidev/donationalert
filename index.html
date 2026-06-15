@@ -756,8 +756,8 @@
   // SE overlay URL is NOT shown in the UI
   // ==========================================
   const ENV = {
-    DEFAULT_YOUTUBE_URL: '',  // Set your default YouTube video URL here
-    SE_CHAT_URL: '',  // Set your StreamElements overlay URL here
+    DEFAULT_YOUTUBE_URL: process.env.DEFAULT_YOUTUBE_URL || '',  // Set your default YouTube video URL here
+    SE_CHAT_URL: process.env.SE_CHAT_URL || '',  // Set your StreamElements overlay URL here
     DONATION_ENDPOINT: 'https://bvavtdyxuzzabzgodbjw.supabase.co/functions/v1/donation'
   };
 
@@ -924,139 +924,140 @@
   }
 
   async function doPay() {
-  const btn  = document.getElementById('pay-btn');
-  const txt  = document.getElementById('pay-txt');
-  const spin = document.getElementById('pay-spin');
-  const provider = document.getElementById('payment-method').value;
+    const btn  = document.getElementById('pay-btn');
+    const txt  = document.getElementById('pay-txt');
+    const spin = document.getElementById('pay-spin');
+    const provider = document.getElementById('payment-method').value;
 
-  btn.disabled = true;
-  txt.textContent = 'Processing…';
-  spin.style.display = 'block';
+    btn.disabled = true;
+    txt.textContent = 'Processing…';
+    spin.style.display = 'block';
 
-  try {
-    // Handle different payment providers
-    if (provider === 'razorpay') {
-      await handleRazorpay();
-      return;
-    } else if (provider === 'paypal') {
-      await handlePaypal();
-      return;
-    } else if (provider === 'cashfree') {
-      await handleCashfree();
+    try {
+      // Handle different payment providers
+      if (provider === 'razorpay') {
+        await handleRazorpay();
+        return;
+      } else if (provider === 'paypal') {
+        await handlePaypal();
+        return;
+      } else if (provider === 'cashfree') {
+        await handleCashfree();
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    } finally {
+      spin.style.display = 'none';
+      btn.disabled = false;
+      txt.textContent = 'Pay Now';
+    }
+  }
+
+  async function handleCashfree() {
+    // Step 1: Create order
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:    state.name,
+        email:   state.email,
+        amount:  state.amount,
+        message: state.msg,
+        provider: 'cashfree'
+      })
+    });
+
+    const data = await res.json();
+    console.log('Order response:', data);
+
+    if (!res.ok || !data.payment_session_id) {
+      alert('Error: ' + (data.error || data.cf_response?.message || 'No session ID returned'));
       return;
     }
-  } catch (err) {
-    console.error(err);
-    alert('Error: ' + err.message);
-  } finally {
-    spin.style.display = 'none';
-    btn.disabled = false;
-    txt.textContent = 'Pay Now';
-  }
-}
 
-async function handleCashfree() {
-  // Step 1: Create order
-  const res = await fetch('/api/create-order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name:    state.name,
-      email:   state.email,
-      amount:  state.amount,
-      message: state.msg
-    })
-  });
+    // Step 2: Open Cashfree checkout
+    const cashfree = Cashfree({
+      mode: 'production'
+    });
 
-  const data = await res.json();
-  console.log('Order response:', data);
-
-  if (!res.ok || !data.payment_session_id) {
-    alert('Error: ' + (data.error || data.cf_response?.message || 'No session ID returned'));
-    return;
+    await cashfree.checkout({
+      paymentSessionId: data.payment_session_id,
+      returnUrl: `${window.location.origin}/thankyou?order_id=${data.order_id}`,
+    });
   }
 
-  // Step 2: Open Cashfree checkout
-  const cashfree = Cashfree({
-    mode: 'production'
-  });
+  async function handleRazorpay() {
+    // Create Razorpay order
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:    state.name,
+        email:   state.email,
+        amount:  state.amount,
+        message: state.msg,
+        provider: 'razorpay'
+      })
+    });
 
-  await cashfree.checkout({
-    paymentSessionId: data.payment_session_id,
-    returnUrl: `${window.location.origin}/thankyou?order_id=${data.order_id}`,
-  });
-}
-
-async function handleRazorpay() {
-  // Create Razorpay order
-  const res = await fetch('/api/create-order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name:    state.name,
-      email:   state.email,
-      amount:  state.amount,
-      message: state.msg,
-      provider: 'razorpay'
-    })
-  });
-
-  const data = await res.json();
-  
-  if (!res.ok || !data.razorpay_order_id) {
-    alert('Error: ' + (data.error || 'Failed to create Razorpay order'));
-    return;
-  }
-
-  // Open Razorpay checkout
-  const options = {
-    key: data.razorpay_key_id,
-    amount: Math.round(state.amount * 100),
-    currency: 'INR',
-    name: 'StreamTip',
-    description: 'Tip for streamer',
-    order_id: data.razorpay_order_id,
-    handler: function(response) {
-      // Success callback
-      window.location.href = `/thankyou?order_id=${data.order_id}&payment_id=${response.razorpay_payment_id}`;
-    },
-    prefill: {
-      name: state.name,
-      email: state.email
-    },
-    theme: {
-      color: '#6c63ff'
+    const data = await res.json();
+    
+    if (!res.ok || !data.razorpay_order_id) {
+      alert('Error: ' + (data.error || 'Failed to create Razorpay order'));
+      return;
     }
-  };
 
-  const rzp = new Razorpay(options);
-  rzp.open();
-}
+    // Open Razorpay checkout
+    const options = {
+      key: data.razorpay_key_id,
+      amount: Math.round(state.amount * 100),
+      currency: 'INR',
+      name: 'StreamTip',
+      description: 'Tip for streamer',
+      order_id: data.razorpay_order_id,
+      handler: function(response) {
+        // Success callback
+        window.location.href = `/thankyou?order_id=${data.order_id}&payment_id=${response.razorpay_payment_id}`;
+      },
+      prefill: {
+        name: state.name,
+        email: state.email
+      },
+      theme: {
+        color: '#6c63ff'
+      }
+    };
 
-async function handlePaypal() {
-  // Redirect to PayPal or open PayPal popup
-  const res = await fetch('/api/create-order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name:    state.name,
-      email:   state.email,
-      amount:  state.amount,
-      message: state.msg,
-      provider: 'paypal'
-    })
-  });
-
-  const data = await res.json();
-  
-  if (!res.ok || !data.paypal_approval_url) {
-    alert('Error: ' + (data.error || 'Failed to create PayPal payment'));
-    return;
+    const rzp = new Razorpay(options);
+    rzp.open();
   }
 
-  // Open PayPal in popup or redirect
-  window.location.href = data.paypal_approval_url;
-}
+  async function handlePaypal() {
+    // Redirect to PayPal or open PayPal popup
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:    state.name,
+        email:   state.email,
+        amount:  state.amount,
+        message: state.msg,
+        provider: 'paypal'
+      })
+    });
+
+    const data = await res.json();
+    
+    if (!res.ok || !data.paypal_approval_url) {
+      alert('Error: ' + (data.error || 'Failed to create PayPal payment'));
+      return;
+    }
+
+    // Open PayPal in popup or redirect
+    window.location.href = data.paypal_approval_url;
+  }
 
   function showBanner(name, amt) {
     document.getElementById('tip-av').innerText   = name.slice(0, 2).toUpperCase();
