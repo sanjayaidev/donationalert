@@ -241,6 +241,91 @@
       padding: 20px;
     }
     
+    /* Media content styles */
+    .media-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    .responsive-media {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    
+    /* Animated Alert/Notification System */
+    .animated-alert {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, var(--surface2), var(--surface3));
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 10000;
+      opacity: 0;
+      transform: translateX(400px);
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      min-width: 280px;
+      backdrop-filter: blur(10px);
+    }
+    .animated-alert.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .alert-icon {
+      font-size: 20px;
+      animation: pulse 2s infinite;
+    }
+    .alert-message {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    /* Animated Text Effects */
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent); }
+      50% { text-shadow: 0 0 20px var(--accent), 0 0 30px var(--accent2); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animated-text-glow {
+      animation: glow 2s ease-in-out infinite;
+    }
+    .animated-text-slide {
+      animation: slideIn 0.5s ease-out;
+    }
+    .animated-text-bounce {
+      animation: bounce 1s ease-in-out infinite;
+    }
+    .animated-text-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    
     /* Responsive */
     @media (max-width: 900px) {
       body { flex-direction: column; }
@@ -251,6 +336,11 @@
         border-top: 1px solid var(--border);
       }
       .video-container { max-width: 100%; }
+      .animated-alert {
+        left: 20px;
+        right: 20px;
+        min-width: auto;
+      }
     }
   </style>
 </head>
@@ -278,6 +368,10 @@
           <input type="text" id="f-name" placeholder="Anonymous">
         </div>
         <div class="fld">
+          <label class="fld-label">Your Email (optional)</label>
+          <input type="email" id="f-email" placeholder="your@email.com">
+        </div>
+        <div class="fld">
           <label class="fld-label">Amount</label>
           <div class="preset-btns">
             <button class="preset-btn" onclick="selectAmount(50)">₹50</button>
@@ -298,6 +392,7 @@
       <div class="step-panel" id="step2">
         <div class="review-box">
           <div class="rv-row"><span>Name</span><span id="r-name">—</span></div>
+          <div class="rv-row"><span>Email</span><span id="r-email">—</span></div>
           <div class="rv-row"><span>Amount</span><span style="color:var(--accent2);font-size:14px" id="r-amt">₹0</span></div>
           <div class="rv-row"><span>Message</span><span id="r-msg" style="max-width:60%;text-align:right">—</span></div>
         </div>
@@ -324,13 +419,13 @@
     
     <!-- Chat Box -->
     <div class="chat-container">
-      <div class="panel-title">Live Chat</div>
+      <div class="panel-title">Live Chat / Media Viewer</div>
       <div class="chat-input-group">
-        <input type="text" id="chat-url" placeholder="Enter chat URL (StreamElements, Twitch, etc.)">
+        <input type="text" id="chat-url" placeholder="Enter chat URL, image, video, or GIF URL...">
         <button class="btn btn-primary" onclick="loadChat()" style="padding:8px 14px;">Load</button>
       </div>
       <div class="chat-frame-wrapper" id="chat-wrapper">
-        <div class="chat-placeholder">Enter a URL above to load live chat</div>
+        <div class="chat-placeholder">Enter a URL above to load live chat, image, video, or GIF</div>
       </div>
     </div>
   </div>
@@ -394,6 +489,7 @@
       if (step === 2) {
         // Validate and populate review
         const name = document.getElementById('f-name').value || 'Anonymous';
+        const email = document.getElementById('f-email').value || '—';
         const amount = parseFloat(document.getElementById('f-amount').value) || 0;
         const msg = document.getElementById('f-msg').value || '—';
         
@@ -402,6 +498,7 @@
           step = 1;
         } else {
           document.getElementById('r-name').textContent = name;
+          document.getElementById('r-email').textContent = email;
           document.getElementById('r-amt').textContent = '₹' + amount.toFixed(2);
           document.getElementById('r-msg').textContent = msg;
         }
@@ -493,6 +590,7 @@
     
     function resetForm() {
       document.getElementById('f-name').value = '';
+      document.getElementById('f-email').value = '';
       document.getElementById('f-amount').value = '';
       document.getElementById('f-msg').value = '';
       selectedAmount = 0;
@@ -505,16 +603,86 @@
       const wrapper = document.getElementById('chat-wrapper');
       
       if (!url) {
-        wrapper.innerHTML = '<div class="chat-placeholder">Enter a URL above to load live chat</div>';
+        wrapper.innerHTML = '<div class="chat-placeholder">Enter a URL above to load live chat, image, video, or GIF</div>';
         return;
       }
       
-      wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
+      // Detect media type and render accordingly
+      if (isImage(url)) {
+        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media"></div>';
+        showAlert('Image loaded successfully!');
+      } else if (isVideo(url)) {
+        wrapper.innerHTML = '<div class="media-content"><video src="' + url + '" controls autoplay loop class="responsive-media"></video></div>';
+        showAlert('Video loaded successfully!');
+      } else if (isGif(url)) {
+        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="GIF" class="responsive-media"></div>';
+        showAlert('GIF loaded successfully!');
+      } else if (isDirectMediaURL(url)) {
+        // Generic media handler
+        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media"></div>';
+        showAlert('Media loaded successfully!');
+      } else {
+        // Default: iframe for chat URLs
+        wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
+        
+        // Wait for iframe to load then scale
+        const iframe = document.getElementById('chat-frame');
+        iframe.onload = () => scaleChat();
+        setTimeout(scaleChat, 1000); // Fallback timeout
+        showAlert('Chat loaded successfully!');
+      }
+    }
+    
+    // Helper functions to detect media types
+    function isImage(url) {
+      return /\.(gif|jpg|jpeg|png|webp|svg|avif)(\?.*)?$/i.test(url);
+    }
+    
+    function isGif(url) {
+      return /\.gif(\?.*)?$/i.test(url);
+    }
+    
+    function isVideo(url) {
+      return /\.(mp4|webm|ogg|mov|avi|mkv)(\?.*)?$/i.test(url);
+    }
+    
+    function isDirectMediaURL(url) {
+      // Check for common CDN patterns that serve images
+      return url.includes('i.imgur.com') || 
+             url.includes('cdn.') || 
+             url.includes('media.') ||
+             url.includes('images.');
+    }
+    
+    // Alert/notification system with animations
+    function showAlert(message, type = 'info') {
+      // Remove existing alerts
+      const existingAlert = document.querySelector('.animated-alert');
+      if (existingAlert) {
+        existingAlert.remove();
+      }
       
-      // Wait for iframe to load then scale
-      const iframe = document.getElementById('chat-frame');
-      iframe.onload = () => scaleChat();
-      setTimeout(scaleChat, 1000); // Fallback timeout
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'animated-alert';
+      
+      const icons = {
+        info: 'ℹ️',
+        success: '✅',
+        warning: '⚠️',
+        error: '❌'
+      };
+      
+      alertDiv.innerHTML = '<span class="alert-icon">' + icons[type] + '</span><span class="alert-message">' + message + '</span>';
+      document.body.appendChild(alertDiv);
+      
+      // Trigger animation
+      setTimeout(() => alertDiv.classList.add('show'), 10);
+      
+      // Auto-remove after 3 seconds
+      setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 300);
+      }, 3000);
     }
     
     function scaleChat() {
