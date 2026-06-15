@@ -465,11 +465,27 @@
     .se-iframe-wrap {
       flex: 1;
       background: #0a0a0f;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .se-iframe-wrap iframe {
-      width: 100%; height: 100%;
-      border: none; display: block;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
       min-height: 320px;
+      transform-origin: center center;
+    }
+    .se-iframe-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     /* Recent tips in sidebar */
@@ -717,12 +733,14 @@
         <div style="font-size:9px;color:var(--text3);">StreamElements</div>
       </div>
       <div class="se-iframe-wrap">
-        <iframe id="seChatIframe"
-                src="about:blank"
-                title="StreamElements Chat Overlay"
-                allow="clipboard-write"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals">
-        </iframe>
+        <div class="se-iframe-container" id="seIframeContainer">
+          <iframe id="seChatIframe"
+                  src="about:blank"
+                  title="StreamElements Chat Overlay"
+                  allow="clipboard-write"
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals">
+          </iframe>
+        </div>
       </div>
      
       </div>
@@ -838,20 +856,82 @@
   }
 
   // ==========================================
+  // CHAT IFRAME SCALING TO FIT CONTAINER
+  // ==========================================
+  function scaleIframeToFit() {
+    const container = document.getElementById('seIframeContainer');
+    const iframe = document.getElementById('seChatIframe');
+    
+    if (!container || !iframe) return;
+    
+    // Reset transform to get natural dimensions
+    iframe.style.transform = 'none';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    
+    // Wait for iframe to load then scale
+    const tryScale = () => {
+      const containerRect = container.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      const containerHeight = containerRect.height;
+      
+      // Default to container dimensions
+      let iframeWidth = containerWidth;
+      let iframeHeight = containerHeight;
+      
+      // Try to get iframe content dimensions (may fail due to CORS)
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iframeDoc && iframeDoc.body) {
+          iframeWidth = Math.max(iframeDoc.body.scrollWidth, containerWidth);
+          iframeHeight = Math.max(iframeDoc.body.scrollHeight, containerHeight);
+        }
+      } catch (e) {
+        // CORS restriction - use container dimensions
+      }
+      
+      // Calculate scale to fit
+      const scaleX = containerWidth / iframeWidth;
+      const scaleY = containerHeight / iframeHeight;
+      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
+      
+      if (scale < 1) {
+        iframe.style.transform = `scale(${scale})`;
+        iframe.style.width = `${iframeWidth}px`;
+        iframe.style.height = `${iframeHeight}px`;
+      }
+    };
+    
+    // Try scaling after a short delay
+    setTimeout(tryScale, 500);
+  }
+
+  // ==========================================
   // STREAMELEMENTS — env-only + UI input
   // ==========================================
   function initSEChat() {
     if (ENV.SE_CHAT_URL && !ENV.SE_CHAT_URL.includes('YOUR_CHANNEL')) {
-      document.getElementById('seChatIframe').src = ENV.SE_CHAT_URL;
+      const iframe = document.getElementById('seChatIframe');
+      iframe.src = ENV.SE_CHAT_URL;
       document.getElementById('seUrlInput').value = ENV.SE_CHAT_URL;
+      // Scale after iframe loads
+      setTimeout(scaleIframeToFit, 1000);
     }
   }
 
   function loadSE() {
     const url = document.getElementById('seUrlInput').value.trim();
     if (!url) return;
-    document.getElementById('seChatIframe').src = url;
+    const iframe = document.getElementById('seChatIframe');
+    iframe.src = url;
+    // Scale after iframe loads
+    setTimeout(scaleIframeToFit, 1000);
   }
+  
+  // Listen for resize events to re-scale
+  window.addEventListener('resize', () => {
+    setTimeout(scaleIframeToFit, 100);
+  });
 
   // ==========================================
   // VIEWER COUNT TICKER
