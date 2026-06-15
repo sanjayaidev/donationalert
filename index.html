@@ -1,746 +1,1125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Stream Tips</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>StreamTip · Live + Tips</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --surface2: #1a1a25;
-      --surface3: #222230;
-      --text: #e8e8ed;
-      --text-dim: #9999aa;
-      --accent: #7c5cff;
-      --accent2: #ff4d8d;
-      --border: #2a2a3a;
-      --border2: #3a3a4a;
-      --success: #00dc82;
-      --font-sans: 'Inter', system-ui, sans-serif;
+      --bg:        #040407;
+      --surface:   #09090f;
+      --surface2:  #0e0e18;
+      --surface3:  #13131f;
+      --border:    #1c1c2e;
+      --border2:   #252540;
+      --accent:    #6c63ff;
+      --accent2:   #9b94ff;
+      --accent3:   #c8c4ff;
+      --red:       #ff3f3f;
+      --red-dim:   #3a1212;
+      --green:     #22d382;
+      --text:      #e8e8f8;
+      --text2:     #9090b8;
+      --text3:     #5a5a80;
       --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Syne', sans-serif;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
     body {
       background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-sans);
+      font-family: var(--font-mono);
+      padding: 10px;
       min-height: 100vh;
-      display: flex;
-      overflow-x: hidden;
+      color: var(--text);
     }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    
-    /* Main Layout */
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 40px 20px;
-    }
-    .video-container {
-      width: 100%;
-      max-width: 900px;
-      aspect-ratio: 16/9;
+
+    /* ===== CONTAINER ===== */
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
       background: var(--surface);
-      border-radius: 16px;
+      border-radius: 20px;
       overflow: hidden;
       border: 1px solid var(--border);
-      margin-bottom: 30px;
+      box-shadow: 0 32px 64px rgba(0,0,0,.8), 0 0 0 1px rgba(108,99,255,.12);
     }
-    .video-container iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .hero-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-    .hero-subtitle {
-      color: var(--text-dim);
-      font-size: 16px;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .btn {
-      display: inline-flex;
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      font-family: var(--font-sans);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(124, 92, 255, 0.3);
-    }
-    .btn-ghost {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border2);
-    }
-    .btn-ghost:hover {
-      background: var(--surface2);
-    }
-    
-    /* Side Panel */
-    .side-panel {
-      width: 380px;
+      justify-content: space-between;
+      padding: 10px 18px;
       background: var(--surface);
-      border-left: 1px solid var(--border);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      overflow-y: auto;
-      max-height: 100vh;
-    }
-    .panel-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    
-    /* Tip Form */
-    .tip-form {
-      background: var(--surface2);
-      border-radius: 12px;
-      padding: 20px;
-      border: 1px solid var(--border);
-    }
-    .step-panel { display: none; }
-    .step-panel.active { display: block; }
-    .fld { margin-bottom: 14px; }
-    .fld-label {
-      display: block;
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-      font-family: var(--font-mono);
-    }
-    .fld input, .fld select, .fld textarea {
-      width: 100%;
-      background: var(--surface3);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 10px 12px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: var(--font-sans);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .fld input:focus, .fld select:focus, .fld textarea:focus {
-      border-color: var(--accent);
-    }
-    .preset-btns {
-      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
       gap: 8px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #ff3030, #cc0000);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; color: white;
+      box-shadow: 0 4px 12px rgba(255,48,48,.35);
+    }
+    .logo-text {
+      font-family: var(--font-head);
+      font-size: 20px; font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--text);
+    }
+    .logo-text span { color: var(--red); }
+
+    .badge-live {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 10px; font-weight: 700;
+      color: #ff9090;
+      letter-spacing: .06em;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--red);
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .viewer-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 11px; color: var(--text2);
+    }
+    .viewer-pill i { font-size: 13px; color: var(--accent); }
+
+    /* ===== LAYOUT ===== */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      min-height: 0;
+    }
+
+    .left-panel {
+      display: flex; flex-direction: column;
+      background: var(--surface);
+      min-width: 0;
+    }
+
+    .right-panel {
+      background: var(--surface2);
+      display: flex; flex-direction: column;
+      border-left: 1px solid var(--border);
+      min-width: 0;
+    }
+
+    /* ===== YOUTUBE EMBED ===== */
+    .yt-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #000;
+      border-bottom: 1px solid var(--border);
+    }
+    .yt-wrapper iframe {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* Error / fallback overlay */
+    .yt-fallback {
+      position: absolute; inset: 0;
+      display: none;
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+      background: linear-gradient(180deg, rgba(4,4,7,.95) 0%, rgba(12,8,24,.98) 100%);
+      backdrop-filter: blur(12px);
+      z-index: 20;
+      padding: 24px; text-align: center;
+    }
+    .yt-fallback.show { display: flex; }
+    .yt-fallback-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(255,48,48,.12);
+      border: 1px solid rgba(255,48,48,.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: var(--red);
+    }
+    .yt-fallback h3 { font-family: var(--font-head); font-size: 16px; color: var(--text); margin-bottom: 4px; }
+    .yt-fallback p { font-size: 11px; color: var(--text3); max-width: 280px; line-height: 1.6; }
+    .yt-fallback-link {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--red);
+      color: white; text-decoration: none;
+      padding: 9px 18px; border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      transition: .15s; margin-top: 4px;
+    }
+    .yt-fallback-link:hover { background: #ff6060; }
+    .yt-fallback-hints {
+      font-size: 10px; color: var(--text3);
+      background: var(--surface3);
+      border-radius: 10px; padding: 8px 14px;
+      text-align: left; line-height: 1.8;
+    }
+
+    /* ===== URL CONFIG BAR ===== */
+    .url-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
     }
-    .preset-btn {
+    .url-bar i { color: var(--accent); font-size: 14px; flex-shrink: 0; }
+    .url-bar input {
+      flex: 1; min-width: 180px;
       background: var(--surface3);
       border: 1px solid var(--border2);
-      color: var(--text);
-      padding: 8px 14px;
       border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 7px 12px;
+      color: var(--text); font-size: 11px;
+      font-family: var(--font-mono);
+      outline: none;
+      transition: .15s;
     }
-    .preset-btn:hover, .preset-btn.selected {
+    .url-bar input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,99,255,.15); }
+    .url-bar .load-btn {
       background: var(--accent);
-      border-color: var(--accent);
+      border: none; border-radius: 8px;
+      padding: 7px 14px;
+      color: white; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: .15s;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
     }
-    
+    .url-bar .load-btn:hover { background: var(--accent2); }
+
+    /* ===== TIP BANNER ===== */
+    .tip-banner {
+      display: none;
+      align-items: center; gap: 10px;
+      margin: 10px 14px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, rgba(108,99,255,.18), rgba(108,99,255,.08));
+      border: 1px solid rgba(108,99,255,.4);
+      border-radius: 12px;
+      animation: slideDown .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .tip-banner.show { display: flex; }
+    @keyframes slideDown {
+      from { transform: translateY(-16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .tip-av {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: white;
+      flex-shrink: 0;
+    }
+    .tip-banner-text { font-size: 12px; color: var(--text2); flex: 1; }
+    .tip-banner-text strong { color: var(--text); }
+    .tip-banner-amt {
+      font-size: 14px; font-weight: 700;
+      color: var(--accent2);
+      background: rgba(108,99,255,.12);
+      padding: 4px 12px; border-radius: 999px;
+    }
+
+    /* ===== PAYMENT PANEL ===== */
+    .payment-panel {
+      flex: 1; padding: 16px;
+      overflow-y: auto;
+    }
+
+    .ptabs {
+      display: flex; gap: 4px;
+      background: var(--surface3);
+      border-radius: 10px; padding: 3px;
+      margin-bottom: 16px;
+    }
+    .ptab {
+      flex: 1; text-align: center;
+      padding: 8px; font-size: 11px; font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer; color: var(--text3);
+      transition: .15s; letter-spacing: .03em;
+    }
+    .ptab.active {
+      background: var(--surface);
+      color: var(--accent2);
+      box-shadow: 0 1px 4px rgba(0,0,0,.4);
+    }
+
+    /* Steps */
+    .step-row {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 18px;
+    }
+    .sp {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--surface3); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text3);
+      flex-shrink: 0; transition: .2s;
+    }
+    .sp.done { background: var(--accent); border-color: var(--accent2); color: white; }
+    .sp.cur  { background: var(--accent); border-color: var(--accent3); color: white; box-shadow: 0 0 0 4px rgba(108,99,255,.2); }
+    .sl { flex: 1; height: 1px; background: var(--border); transition: .3s; }
+    .sl.done { background: var(--accent); }
+
+    .step-panel { display: none; }
+    .step-panel.vis { display: block; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(6px)} to {opacity:1; transform:none} }
+
+    /* Form fields */
+    .fld { margin-bottom: 12px; }
+    .fld-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text3); margin-bottom: 5px; display: block;
+    }
+    .fld input, .fld textarea {
+      width: 100%;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 12px; color: var(--text);
+      font-family: var(--font-mono);
+      outline: none; transition: .15s;
+    }
+    .fld input:focus, .fld textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+    }
+    .fld input::placeholder { color: var(--text3); }
+
+    /* Amount chips */
+    .amt-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px; margin-bottom: 10px;
+    }
+    .amt-chip {
+      padding: 9px 0;
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 9px;
+      font-size: 12px; font-weight: 700;
+      color: var(--text2); cursor: pointer;
+      font-family: var(--font-mono);
+      transition: .12s;
+    }
+    .amt-chip:hover { border-color: var(--accent); color: var(--accent2); }
+    .amt-chip.sel {
+      background: rgba(108,99,255,.18);
+      border-color: var(--accent);
+      color: var(--accent3);
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      border: none; border-radius: 10px;
+      padding: 11px 0;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 10px; cursor: pointer;
+      font-family: var(--font-mono);
+      transition: .15s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #9b60ff);
+      color: white;
+      box-shadow: 0 4px 16px rgba(108,99,255,.35);
+    }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text3);
+    }
+    .btn-ghost:hover { border-color: var(--text3); color: var(--text2); }
+
     /* Review box */
     .review-box {
       background: var(--surface3);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 14px;
       border: 1px solid var(--border2);
+      border-radius: 12px; padding: 14px; margin-bottom: 12px;
     }
     .rv-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 6px 0;
-      font-size: 13px;
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 11px; padding: 5px 0;
       border-bottom: 1px solid var(--border);
     }
     .rv-row:last-child { border-bottom: none; }
-    .rv-row span:first-child { color: var(--text-dim); }
-    
-    /* Chat Box */
-    .chat-container {
-      background: var(--surface2);
-      border-radius: 12px;
-      padding: 16px;
+    .rv-row span:first-child { color: var(--text3); }
+    .rv-row span:last-child { color: var(--text); font-weight: 600; }
+
+    /* Pay gate */
+    .pay-gate {
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 12px; padding: 16px;
+      text-align: center; margin-bottom: 4px;
+    }
+    .pay-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .pay-amt { font-size: 26px; font-weight: 700; color: var(--accent2); margin: 4px 0 10px; }
+    .pay-methods {
+      display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+    }
+    .pm {
+      font-size: 9px; font-weight: 700;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 3px 10px; border-radius: 999px;
+      color: var(--text3); letter-spacing: .04em;
+    }
+    .secure-badge {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 9px; color: var(--text3); margin-top: 10px;
+    }
+    .secure-badge i { color: var(--green); font-size: 11px; }
+
+    /* Spinner */
+    .spin {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.25);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: rot .6s linear infinite;
+      display: none;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* Success */
+    .success-wrap { text-align: center; padding: 8px 0; }
+    .s-icon {
+      width: 54px; height: 54px;
+      background: rgba(34,211,130,.12);
+      border: 1px solid rgba(34,211,130,.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 24px; color: var(--green);
+    }
+    .s-title { font-family: var(--font-head); font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .s-sub { font-size: 11px; color: var(--text3); margin-bottom: 12px; }
+    .log-mini {
+      font-family: var(--font-mono); font-size: 10px;
+      background: #020208; border-radius: 8px;
+      padding: 10px; margin: 10px 0; text-align: left;
       border: 1px solid var(--border);
+      line-height: 1.8;
+    }
+
+    /* ===== HISTORY ===== */
+    .history-empty { font-size: 11px; color: var(--text3); padding: 8px 0; }
+    .hist-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-name { color: var(--text2); }
+    .hist-amt { color: var(--accent2); font-weight: 700; }
+    .hist-ts { font-size: 9px; color: var(--text3); }
+
+    /* ===== RIGHT PANEL: CHAT SIDEBAR ===== */
+    .sidebar-hdr {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-hdr-title {
+      font-family: var(--font-head); font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px; color: var(--text);
+    }
+    .sidebar-hdr-title i { color: var(--accent); }
+
+    .se-iframe-wrap {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 400px;
+      background: #0a0a0f;
     }
-    .chat-input-group {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
+    .se-iframe-wrap iframe {
+      width: 100%; height: 100%;
+      border: none; display: block;
+      min-height: 320px;
     }
-    .chat-input-group input {
-      flex: 1;
-      background: var(--surface3);
-      border: 1px solid var(--border2);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 12px;
-      outline: none;
+
+    /* Recent tips in sidebar */
+    .recent-tips {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      background: var(--surface2);
     }
-    .chat-frame-wrapper {
-      flex: 1;
-      background: var(--surface3);
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 300px;
+    .rt-hdr {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text3); margin-bottom: 8px;
     }
-    .chat-scaler {
-      transform-origin: center center;
-      transition: transform 0.3s ease;
+    .rt-item {
+      display: flex; justify-content: space-between;
+      font-size: 11px; padding: 5px 0;
+      border-bottom: 1px solid var(--border);
     }
-    .chat-scaler iframe {
-      border: none;
-      display: block;
+    .rt-item:last-child { border-bottom: none; }
+    .rt-item .rt-name { color: var(--text2); }
+    .rt-item .rt-val { color: var(--accent2); font-weight: 700; }
+
+    .sidebar-note {
+      padding: 8px 14px;
+      font-size: 9px; color: var(--text3);
+      text-align: center; background: var(--surface);
+      border-top: 1px solid var(--border);
     }
-    .chat-placeholder {
-      color: var(--text-dim);
-      font-size: 13px;
-      text-align: center;
-      padding: 20px;
-    }
-    
-    /* Media content styles */
-    .media-content {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-    }
-    .responsive-media {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      border-radius: 8px;
-    }
-    
-    /* Animated Alert/Notification System */
-    .animated-alert {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: linear-gradient(135deg, var(--surface2), var(--surface3));
-      border: 1px solid var(--border2);
-      border-radius: 12px;
-      padding: 14px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      z-index: 10000;
-      opacity: 0;
-      transform: translateX(400px);
-      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      min-width: 280px;
-      backdrop-filter: blur(10px);
-    }
-    .animated-alert.show {
-      opacity: 1;
-      transform: translateX(0);
-    }
-    .alert-icon {
-      font-size: 20px;
-      animation: pulse 2s infinite;
-    }
-    .alert-message {
-      color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-    
-    /* Animated Text Effects */
-    @keyframes glow {
-      0%, 100% { text-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent); }
-      50% { text-shadow: 0 0 20px var(--accent), 0 0 30px var(--accent2); }
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    .animated-text-glow {
-      animation: glow 2s ease-in-out infinite;
-    }
-    .animated-text-slide {
-      animation: slideIn 0.5s ease-out;
-    }
-    .animated-text-bounce {
-      animation: bounce 1s ease-in-out infinite;
-    }
-    .animated-text-shake {
-      animation: shake 0.5s ease-in-out;
-    }
-    
-    /* Responsive */
+
+    /* ===== MOBILE ===== */
     @media (max-width: 900px) {
-      body { flex-direction: column; }
-      .side-panel {
-        width: 100%;
-        max-height: none;
+      body { padding: 6px; }
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+      .right-panel {
         border-left: none;
         border-top: 1px solid var(--border);
       }
-      .video-container { max-width: 100%; }
-      .animated-alert {
-        left: 20px;
-        right: 20px;
-        min-width: auto;
-      }
+      .se-iframe-wrap { min-height: 340px; }
+      .app { border-radius: 14px; }
     }
+
+    @media (max-width: 520px) {
+      .topbar { padding: 8px 12px; }
+      .logo-text { font-size: 17px; }
+      .viewer-pill { display: none; }
+      .url-bar input { min-width: 100%; }
+      .amt-grid { grid-template-columns: repeat(2, 1fr); }
+      .payment-panel { padding: 12px; }
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
   </style>
 </head>
 <body>
-  <div class="main-content">
-    <div class="video-container">
-      <iframe id="main-video" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-brand-youtube"></i></div>
+      <div class="logo-text">Stream<span>Tip</span></div>
     </div>
-    <h1 class="hero-title">Support the Stream</h1>
-    <p class="hero-subtitle">Send a tip to show your appreciation</p>
-    <button class="btn btn-primary" onclick="scrollToTip()">
-      <i class="ti ti-heart"></i> Send a Tip
-    </button>
-  </div>
-  
-  <div class="side-panel">
-    <!-- Tip Form -->
-    <div class="tip-form">
-      <div class="panel-title">Send a Tip</div>
-      
-      <!-- Step 1: Details -->
-      <div class="step-panel active" id="step1">
-        <div class="fld">
-          <label class="fld-label">Your Name (optional)</label>
-          <input type="text" id="f-name" placeholder="Anonymous">
-        </div>
-        <div class="fld">
-          <label class="fld-label">Your Email (optional)</label>
-          <input type="email" id="f-email" placeholder="your@email.com">
-        </div>
-        <div class="fld">
-          <label class="fld-label">Amount</label>
-          <div class="preset-btns">
-            <button class="preset-btn" onclick="selectAmount(50)">₹50</button>
-            <button class="preset-btn" onclick="selectAmount(100)">₹100</button>
-            <button class="preset-btn" onclick="selectAmount(250)">₹250</button>
-            <button class="preset-btn" onclick="selectAmount(500)">₹500</button>
-          </div>
-          <input type="number" id="f-amount" placeholder="or enter custom amount" min="1" style="margin-top:8px;">
-        </div>
-        <div class="fld">
-          <label class="fld-label">Message (optional)</label>
-          <input type="text" id="f-msg" placeholder="Cheer or shoutout for the stream…">
-        </div>
-        <button class="btn btn-primary" onclick="goStep(2)">Review tip <i class="ti ti-arrow-right"></i></button>
-      </div>
-      
-      <!-- Step 2: Review -->
-      <div class="step-panel" id="step2">
-        <div class="review-box">
-          <div class="rv-row"><span>Name</span><span id="r-name">—</span></div>
-          <div class="rv-row"><span>Email</span><span id="r-email">—</span></div>
-          <div class="rv-row"><span>Amount</span><span style="color:var(--accent2);font-size:14px" id="r-amt">₹0</span></div>
-          <div class="rv-row"><span>Message</span><span id="r-msg" style="max-width:60%;text-align:right">—</span></div>
-        </div>
-        <button class="btn btn-primary" onclick="goStep(3)"><i class="ti ti-lock"></i> Proceed to Payment</button>
-        <button class="btn btn-ghost" onclick="goStep(1)" style="margin-top:8px;width:100%">← Edit details</button>
-      </div>
-      
-      <!-- Step 3: Payment -->
-      <div class="step-panel" id="step3">
-        <div class="fld">
-          <label class="fld-label">Select Payment Method</label>
-          <select id="payment-method" onchange="updatePaymentUI()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px 12px;color:var(--text);font-size:12px;font-family:var(--font-mono);outline:none;transition:.15s;">
-            <option value="cashfree">Cashfree</option>
-            <option value="razorpay">Razorpay</option>
-            <option value="paypal">PayPal</option>
-          </select>
-        </div>
-        <button class="btn btn-primary" id="pay-btn" onclick="processPayment()" style="width:100%;justify-content:center;margin-bottom:10px;">
-          Pay Now
-        </button>
-        <button class="btn btn-ghost" onclick="goStep(2)" style="width:100%">← Back</button>
-      </div>
+    <div class="badge-live">
+      <div class="live-dot"></div>
+      LIVE
     </div>
-    
-    <!-- Chat Box -->
-    <div class="chat-container">
-      <div class="panel-title">Live Chat / Media Viewer</div>
-      <div class="chat-input-group" style="flex-direction: column; gap: 10px;">
-        <input type="text" id="chat-url" placeholder="Enter chat URL (StreamElements, Twitch, etc.)...">
-        <input type="text" id="media-url" placeholder="Or enter image/video/GIF URL directly...">
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary" onclick="loadChat()" style="flex: 1; padding: 8px 14px;">Load Chat</button>
-          <button class="btn btn-ghost" onclick="loadMedia()" style="flex: 1; padding: 8px 14px;">Load Media</button>
-        </div>
-      </div>
-      <div class="chat-frame-wrapper" id="chat-wrapper">
-        <div class="chat-placeholder">Enter a URL above to load live chat, image, video, or GIF</div>
-      </div>
+    <div class="viewer-pill">
+      <i class="ti ti-users"></i>
+      <span id="viewer-count">1.4k</span> watching
     </div>
   </div>
 
-  <!-- Razorpay SDK -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <!-- PayPal SDK -->
-  <script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+
+    <!-- LEFT: Stream + Tip form -->
+    <div class="left-panel">
+
+      <!-- YouTube Embed -->
+      <div class="yt-wrapper" id="ytWrapper">
+        <iframe id="youtubeStream"
+                src="about:blank"
+                title="YouTube Live Stream"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen>
+        </iframe>
+        <!-- Fallback overlay shown when embed fails (Error 153 / embedding disabled) -->
+        <div class="yt-fallback" id="ytFallback">
+          <div class="yt-fallback-icon"><i class="ti ti-player-play-filled"></i></div>
+          <div>
+            <h3>Video can't be embedded</h3>
+            <p>The streamer may have disabled embedding, or the video is age-restricted / private.</p>
+          </div>
+          <a class="yt-fallback-link" id="ytFallbackLink" href="#" target="_blank" rel="noopener">
+            <i class="ti ti-brand-youtube"></i> Watch on YouTube
+          </a>
+          <div class="yt-fallback-hints">
+            Common causes:<br>
+            • Embedding disabled by creator<br>
+            • Age-restricted / members-only<br>
+            • Incorrect video ID<br>
+            <br>
+            <a href="#" onclick="loadTestVideo();return false;" style="color:var(--accent2)">▸ Load a test video instead</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- YouTube URL bar -->
+      <div class="url-bar">
+        <i class="ti ti-link"></i>
+        <input type="text" id="ytUrlInput" placeholder="YouTube URL, video ID, or live stream URL">
+        <button class="load-btn" onclick="loadYT()">Load</button>
+      </div>
+
+      <!-- StreamElements Chat URL bar -->
+      <div class="url-bar">
+        <i class="ti ti-message-chat"></i>
+        <input type="text" id="seUrlInput" placeholder="StreamElements overlay URL (optional)">
+        <button class="load-btn" onclick="loadSE()">Load Chat</button>
+      </div>
+
+      <!-- Tip banner -->
+      <div class="tip-banner" id="tip-banner">
+        <div class="tip-av" id="tip-av">SJ</div>
+        <div class="tip-banner-text"><strong id="tip-name">—</strong> just tipped!</div>
+        <div class="tip-banner-amt" id="tip-amt">₹0</div>
+      </div>
+
+      <!-- Payment panel -->
+      <div class="payment-panel">
+        <div class="ptabs">
+          <div class="ptab active" id="tab-tip" onclick="switchTab('tip')">💎 Tip Streamer</div>
+          <div class="ptab" id="tab-history" onclick="switchTab('history')">📜 History</div>
+        </div>
+
+        <!-- TIP PANEL -->
+        <div id="panel-tip">
+          <div class="step-row">
+            <div class="sp cur" id="sp1">1</div><div class="sl" id="sl1"></div>
+            <div class="sp" id="sp2">2</div><div class="sl" id="sl2"></div>
+            <div class="sp" id="sp3">3</div><div class="sl" id="sl3"></div>
+            <div class="sp" id="sp4">4</div>
+          </div>
+
+          <!-- Step 1: Details -->
+          <div class="step-panel vis" id="step1">
+            <div class="fld">
+              <label class="fld-label">Your Name</label>
+              <input type="text" id="f-name" placeholder="Display name shown on stream">
+            </div>
+            <div class="fld">
+              <label class="fld-label">Email</label>
+              <input type="email" id="f-email" placeholder="you@example.com">
+            </div>
+            <div class="fld">
+              <label class="fld-label">Tip Amount (₹)</label>
+              <div class="amt-grid">
+                <button class="amt-chip" onclick="pickAmt(10,this)">₹10</button>
+                <button class="amt-chip" onclick="pickAmt(29,this)">₹29</button>
+                <button class="amt-chip" onclick="pickAmt(49,this)">₹49</button>
+                <button class="amt-chip" onclick="pickAmt(100,this)">₹100</button>
+                <button class="amt-chip" onclick="pickAmt(200,this)">₹200</button>
+                <button class="amt-chip" onclick="pickAmt(0,this)">custom</button>
+              </div>
+              <input type="number" id="f-amount" placeholder="or enter custom amount" min="1" style="margin-top:2px;">
+            </div>
+            <div class="fld">
+              <label class="fld-label">Message (optional)</label>
+              <input type="text" id="f-msg" placeholder="Cheer or shoutout for the stream…">
+            </div>
+            <button class="btn btn-primary" onclick="goStep(2)">Review tip <i class="ti ti-arrow-right"></i></button>
+          </div>
+
+          <!-- Step 2: Review -->
+          <div class="step-panel" id="step2">
+            <div class="review-box">
+              <div class="rv-row"><span>Name</span><span id="r-name">—</span></div>
+              <div class="rv-row"><span>Amount</span><span style="color:var(--accent2);font-size:14px" id="r-amt">₹0</span></div>
+              <div class="rv-row"><span>Message</span><span id="r-msg" style="max-width:60%;text-align:right">—</span></div>
+            </div>
+            <button class="btn btn-primary" onclick="goStep(3)"><i class="ti ti-lock"></i> Proceed to Payment</button>
+            <button class="btn btn-ghost" onclick="goStep(1)">← Edit details</button>
+          </div>
+
+          <!-- Step 3: Payment -->
+          <div class="step-panel" id="step3">
+            <div class="fld">
+              <label class="fld-label">Select Payment Method</label>
+              <select id="payment-method" onchange="updatePaymentUI()" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:9px;padding:9px 12px;color:var(--text);font-size:12px;font-family:var(--font-mono);outline:none;transition:.15s;">
+                <option value="cashfree">Cashfree</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </div>
+            <div class="pay-gate">
+              <div class="pay-title" id="pay-provider-title">Cashfree Secure Payment</div>
+              <div class="pay-amt" id="pay-amt">₹0</div>
+              <div class="pay-methods" id="pay-methods-display">
+                <span class="pm">UPI</span>
+                <span class="pm">Cards</span>
+                <span class="pm">NetBanking</span>
+                <span class="pm">Wallets</span>
+              </div>
+              <div class="secure-badge"><i class="ti ti-shield-check"></i> 256-bit SSL encrypted</div>
+            </div>
+            <button class="btn btn-primary" id="pay-btn" onclick="doPay()">
+              <span id="pay-txt">Pay Now</span>
+              <div class="spin" id="pay-spin"></div>
+            </button>
+            <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          </div>
+
+          <!-- Step 4: Success -->
+          <div class="step-panel" id="step4">
+            <div class="success-wrap">
+              <div class="s-icon"><i class="ti ti-check"></i></div>
+              <div class="s-title">Tip Sent! 🎉</div>
+              <div class="s-sub">Your tip will appear on stream shortly</div>
+              <div class="log-mini" id="log-mini"></div>
+              <button class="btn btn-primary" onclick="resetFlow()">➕ Send another tip</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY PANEL -->
+        <div id="panel-history" style="display:none;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.07em;">✨ Recent donations this session</div>
+          <div id="history-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Chat sidebar -->
+    <div class="right-panel">
+      <div class="sidebar-hdr">
+        <div class="sidebar-hdr-title"><i class="ti ti-message-chat"></i> Live Chat</div>
+        <div style="font-size:9px;color:var(--text3);">StreamElements</div>
+      </div>
+      <div class="se-iframe-wrap">
+        <iframe id="seChatIframe"
+                src="about:blank"
+                title="StreamElements Chat Overlay"
+                allow="clipboard-write"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals">
+        </iframe>
+      </div>
+     
+      </div>
+      
+    </div>
+  </div>
+</div>
+<footer style="background:#222;color:#fff;padding:20px;text-align:center;margin-top:40px;">
+    <p style="margin:0 0 10px 0;">&copy; 2026 Krinzy_donation. All Rights Reserved.</p>
+
+    <div>
+        <a href="contact.html"
+           style="color:#ffffff;text-decoration:none;margin:0 15px;">
+           Contact Us
+        </a>
+
+        <a href="refund.html"
+           style="color:#ffffff;text-decoration:none;margin:0 15px;">
+           Refunds & Cancellations
+        </a>
+
+        <a href="terms.html"
+           style="color:#ffffff;text-decoration:none;margin:0 15px;">
+           Terms & Conditions
+        </a>
+    </div>
+</footer>
+<script>
+  // ==========================================
+  // ENV CONFIG — only edit these
+  // SE overlay URL is NOT shown in the UI
+  // ==========================================
+  // ENV values are injected by Vercel at build time via environment variables.
+  // Set DEFAULT_YOUTUBE_URL and SE_CHAT_URL in your Vercel project settings.
+  const ENV = {
+    DEFAULT_YOUTUBE_URL: '{{DEFAULT_YOUTUBE_URL}}',
+    SE_CHAT_URL: '{{SE_CHAT_URL}}',
+    DONATION_ENDPOINT: 'https://bvavtdyxuzzabzgodbjw.supabase.co/functions/v1/donation'
+  };
+  // Vercel replaces {{VAR}} at build time; fall back to empty string if not set
+  if (ENV.DEFAULT_YOUTUBE_URL === '{{DEFAULT_YOUTUBE_URL}}') ENV.DEFAULT_YOUTUBE_URL = '';
+  if (ENV.SE_CHAT_URL === '{{SE_CHAT_URL}}') ENV.SE_CHAT_URL = '';
+
+  // ==========================================
+  // YOUTUBE: robust embed with fallback
+  // ==========================================
+  function extractVideoId(input) {
+    if (!input) return null;
+    const s = input.trim();
+    const patterns = [
+      /[?&]v=([a-zA-Z0-9_-]{11})/,
+      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+      /\/embed\/([a-zA-Z0-9_-]{11})/,
+      /\/shorts\/([a-zA-Z0-9_-]{11})/,
+      /^([a-zA-Z0-9_-]{11})$/
+    ];
+    for (const p of patterns) {
+      const m = s.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function buildEmbedUrl(videoId) {
+    // origin param is critical — it must match the page's origin
+    const origin = encodeURIComponent(location.origin || 'https://streamtip.app');
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}`;
+  }
+
+  let currentYTUrl = '';
+
+  function loadYT(url) {
+    url = url || document.getElementById('ytUrlInput').value.trim();
+    if (!url) return;
+    currentYTUrl = url;
+    document.getElementById('ytUrlInput').value = url;
+
+    const videoId = extractVideoId(url);
+    const iframe   = document.getElementById('youtubeStream');
+    const fallback = document.getElementById('ytFallback');
+    const fbLink   = document.getElementById('ytFallbackLink');
+
+    // Set the Watch on YouTube fallback link regardless
+    fbLink.href = videoId
+      ? `https://www.youtube.com/watch?v=${videoId}`
+      : url;
+
+    if (!videoId) {
+      iframe.src = 'about:blank';
+      fallback.classList.add('show');
+      return;
+    }
+
+    // Hide fallback, load embed
+    fallback.classList.remove('show');
+    iframe.src = buildEmbedUrl(videoId);
+
+    // Detect Error 153 / embed blocked via load event + postMessage
+    iframe.onload = () => {
+      // Give YT player 3s to initialise; if it fires error via postMessage we catch it
+    };
+  }
+
+  // YouTube sends postMessage events — catch player errors
+  window.addEventListener('message', (e) => {
+    if (!e.origin.includes('youtube.com')) return;
+    try {
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      // YT player error codes: 2=invalid param, 5=HTML5 error, 100=not found, 101/150=embed blocked
+      if (data && data.event === 'onError' && [100, 101, 150, 5].includes(data.info)) {
+        document.getElementById('ytFallback').classList.add('show');
+      }
+    } catch {}
+  });
+
+  function loadTestVideo() {
+    loadYT('');
+  }
+
+  // ==========================================
+  // STREAMELEMENTS — env-only + UI input
+  // ==========================================
+  function initSEChat() {
+    if (ENV.SE_CHAT_URL && !ENV.SE_CHAT_URL.includes('YOUR_CHANNEL')) {
+      document.getElementById('seChatIframe').src = ENV.SE_CHAT_URL;
+      document.getElementById('seUrlInput').value = ENV.SE_CHAT_URL;
+    }
+  }
+
+  function loadSE() {
+    const url = document.getElementById('seUrlInput').value.trim();
+    if (!url) return;
+    document.getElementById('seChatIframe').src = url;
+  }
+
+  // ==========================================
+  // VIEWER COUNT TICKER
+  // ==========================================
+  setInterval(() => {
+    const el = document.getElementById('viewer-count');
+    const cur = parseFloat(el.innerText) * 1000 || 1400;
+    const next = Math.max(800, cur + Math.floor(Math.random() * 40) - 20);
+    el.innerText = (next / 1000).toFixed(1) + 'k';
+  }, 4500);
+
+  // ==========================================
+  // TIP FLOW
+  // ==========================================
+  let state = {};
+  let tipHistory = [];
+  let curStep = 1;
+
+  function pickAmt(val, el) {
+    document.querySelectorAll('.amt-chip').forEach(c => c.classList.remove('sel'));
+    el.classList.add('sel');
+    const inp = document.getElementById('f-amount');
+    if (val === 0) { inp.value = ''; inp.focus(); }
+    else inp.value = val;
+  }
+
+  function goStep(n) {
+    if (n === 2) {
+      const name  = document.getElementById('f-name').value.trim();
+      const email = document.getElementById('f-email').value.trim();
+      const amt   = parseFloat(document.getElementById('f-amount').value);
+      if (!name)                                       { alert('Please enter your name'); return; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Enter a valid email'); return; }
+      if (!amt || amt < 1)                             { alert('Minimum tip is ₹1'); return; }
+      state = { name, email, amount: amt, msg: document.getElementById('f-msg').value.trim() };
+      document.getElementById('r-name').innerText = name;
+      document.getElementById('r-amt').innerText  = '₹' + Math.round(amt);
+      document.getElementById('r-msg').innerText  = state.msg || '(no message)';
+      document.getElementById('pay-amt').innerText = '₹' + Math.round(amt);
+    }
+    if (n === 3) {
+      // Update payment provider UI when entering step 3
+      updatePaymentUI();
+    }
+    curStep = n;
+    for (let i = 1; i <= 4; i++) {
+      document.getElementById('step' + i).classList.toggle('vis', i === n);
+      const pip = document.getElementById('sp' + i);
+      pip.className = 'sp' + (i < n ? ' done' : i === n ? ' cur' : '');
+      pip.innerHTML = i < n ? '✓' : i;
+      if (i < 4) document.getElementById('sl' + i).className = 'sl' + (i < n ? ' done' : '');
+    }
+  }
+
+  function updatePaymentUI() {
+    const provider = document.getElementById('payment-method').value;
+    const titleEl = document.getElementById('pay-provider-title');
+    const methodsEl = document.getElementById('pay-methods-display');
+    
+    if (provider === 'razorpay') {
+      titleEl.textContent = 'Razorpay Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>';
+    } else if (provider === 'paypal') {
+      titleEl.textContent = 'PayPal Payment';
+      methodsEl.innerHTML = '<span class="pm">PayPal Account</span><span class="pm">Credit Card</span><span class="pm">Debit Card</span>';
+    } else {
+      titleEl.textContent = 'Cashfree Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>';
+    }
+  }
+
+  async function doPay() {
+  const btn  = document.getElementById('pay-btn');
+  const txt  = document.getElementById('pay-txt');
+  const spin = document.getElementById('pay-spin');
+  const provider = document.getElementById('payment-method').value;
+
+  btn.disabled = true;
+  txt.textContent = 'Processing…';
+  spin.style.display = 'block';
+
+  try {
+    // Handle different payment providers
+    if (provider === 'razorpay') {
+      await handleRazorpay();
+      return;
+    } else if (provider === 'paypal') {
+      await handlePaypal();
+      return;
+    } else if (provider === 'cashfree') {
+      await handleCashfree();
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  } finally {
+    spin.style.display = 'none';
+    btn.disabled = false;
+    txt.textContent = 'Pay Now';
+  }
+}
+
+async function handleCashfree() {
+  // Step 1: Create order
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    state.name,
+      email:   state.email,
+      amount:  state.amount,
+      message: state.msg
+    })
+  });
+
+  const data = await res.json();
+  console.log('Order response:', data);
+
+  if (!res.ok || !data.payment_session_id) {
+    alert('Error: ' + (data.error || data.cf_response?.message || 'No session ID returned'));
+    return;
+  }
+
+  // Step 2: Open Cashfree checkout
+  const cashfree = Cashfree({
+    mode: 'production'
+  });
+
+  await cashfree.checkout({
+    paymentSessionId: data.payment_session_id,
+    returnUrl: `${window.location.origin}/thankyou?order_id=${data.order_id}`,
+  });
+}
+
+async function handleRazorpay() {
+  // Create Razorpay order
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    state.name,
+      email:   state.email,
+      amount:  state.amount,
+      message: state.msg,
+      provider: 'razorpay'
+    })
+  });
+
+  const data = await res.json();
   
-  <script>
-    // Configuration from environment - these will be replaced by Vercel at build time
-    const DEFAULT_YOUTUBE_URL = typeof process !== 'undefined' ? process.env.DEFAULT_YOUTUBE_URL : 'DEFAULT_YOUTUBE_URL';
-    const SE_CHAT_URL = typeof process !== 'undefined' ? process.env.SE_CHAT_URL : 'SE_CHAT_URL';
-    
-    let selectedAmount = 0;
-    
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      // Load default video
-      const videoFrame = document.getElementById('main-video');
-      if (DEFAULT_YOUTUBE_URL && DEFAULT_YOUTUBE_URL !== 'DEFAULT_YOUTUBE_URL') {
-        videoFrame.src = DEFAULT_YOUTUBE_URL;
-      } else {
-        videoFrame.src = 'https://www.youtube.com/embed/live_stream?channel=UC_x5XG1OV2P6uZZ5FSM9Ttw'; // Default NASA
-      }
-      
-      // Load default chat from environment variable
-      const chatInput = document.getElementById('chat-url');
-      if (SE_CHAT_URL && SE_CHAT_URL !== 'SE_CHAT_URL') {
-        chatInput.value = SE_CHAT_URL;
-        setTimeout(() => loadChat(), 500);
-      }
-    });
-    
-    function scrollToTip() {
-      document.querySelector('.tip-form').scrollIntoView({ behavior: 'smooth' });
+  if (!res.ok || !data.razorpay_order_id) {
+    alert('Error: ' + (data.error || 'Failed to create Razorpay order'));
+    return;
+  }
+
+  // Open Razorpay checkout
+  const options = {
+    key: data.razorpay_key_id,
+    amount: Math.round(state.amount * 100),
+    currency: 'INR',
+    name: 'StreamTip',
+    description: 'Tip for streamer',
+    order_id: data.razorpay_order_id,
+    handler: function(response) {
+      // Success callback
+      window.location.href = `/thankyou?order_id=${data.order_id}&payment_id=${response.razorpay_payment_id}`;
+    },
+    prefill: {
+      name: state.name,
+      email: state.email
+    },
+    theme: {
+      color: '#6c63ff'
     }
-    
-    function selectAmount(amount) {
-      selectedAmount = amount;
-      document.getElementById('f-amount').value = amount;
-      document.querySelectorAll('.preset-btn').forEach(btn => {
-        btn.classList.remove('selected');
-        if (btn.textContent.includes('₹' + amount)) {
-          btn.classList.add('selected');
-        }
-      });
+  };
+
+  const rzp = new Razorpay(options);
+  rzp.open();
+}
+
+async function handlePaypal() {
+  // Redirect to PayPal or open PayPal popup
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    state.name,
+      email:   state.email,
+      amount:  state.amount,
+      message: state.msg,
+      provider: 'paypal'
+    })
+  });
+
+  const data = await res.json();
+  
+  if (!res.ok || !data.paypal_approval_url) {
+    alert('Error: ' + (data.error || 'Failed to create PayPal payment'));
+    return;
+  }
+
+  // Open PayPal in popup or redirect
+  window.location.href = data.paypal_approval_url;
+}
+
+  function showBanner(name, amt) {
+    document.getElementById('tip-av').innerText   = name.slice(0, 2).toUpperCase();
+    document.getElementById('tip-name').innerText = name;
+    document.getElementById('tip-amt').innerText  = '₹' + Math.round(amt);
+    const b = document.getElementById('tip-banner');
+    b.classList.add('show');
+    setTimeout(() => b.classList.remove('show'), 5000);
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('history-list');
+    if (!tipHistory.length) {
+      el.innerHTML = '<div class="history-empty">✨ Be the first to tip this session</div>';
+      return;
     }
-    
-    document.getElementById('f-amount')?.addEventListener('input', (e) => {
-      selectedAmount = parseFloat(e.target.value) || 0;
-      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('selected'));
-    });
-    
-    function goStep(step) {
-      // Hide all steps
-      document.querySelectorAll('.step-panel').forEach(panel => {
-        panel.classList.remove('active');
-      });
-      
-      if (step === 2) {
-        // Validate and populate review
-        const name = document.getElementById('f-name').value || 'Anonymous';
-        const email = document.getElementById('f-email').value || '—';
-        const amount = parseFloat(document.getElementById('f-amount').value) || 0;
-        const msg = document.getElementById('f-msg').value || '—';
-        
-        if (amount <= 0) {
-          alert('Please enter a valid amount');
-          step = 1;
-        } else {
-          document.getElementById('r-name').textContent = name;
-          document.getElementById('r-email').textContent = email;
-          document.getElementById('r-amt').textContent = '₹' + amount.toFixed(2);
-          document.getElementById('r-msg').textContent = msg;
-        }
-      }
-      
-      if (step === 3) {
-        updatePaymentUI();
-      }
-      
-      // Show target step
-      document.getElementById('step' + step).classList.add('active');
-    }
-    
-    function updatePaymentUI() {
-      const method = document.getElementById('payment-method').value;
-      const payBtn = document.getElementById('pay-btn');
-      
-      if (method === 'razorpay') {
-        payBtn.textContent = 'Pay with Razorpay';
-      } else if (method === 'paypal') {
-        payBtn.textContent = 'Pay with PayPal';
-      } else {
-        payBtn.textContent = 'Pay with Cashfree';
-      }
-    }
-    
-    async function processPayment() {
-      const method = document.getElementById('payment-method').value;
-      const amount = parseFloat(document.getElementById('f-amount').value) || 0;
-      const name = document.getElementById('f-name').value || 'Anonymous';
-      const message = document.getElementById('f-msg').value || '';
-      
-      if (amount <= 0) {
-        alert('Please enter a valid amount');
-        return;
-      }
-      
-      try {
-        if (method === 'razorpay') {
-          await processRazorpay(amount, name, message);
-        } else if (method === 'paypal') {
-          await processPayPal(amount, name, message);
-        } else if (method === 'cashfree') {
-          await processCashfree(amount, name, message);
-        }
-      } catch (error) {
-        console.error('Payment error:', error);
-        alert('Payment failed: ' + error.message);
-      }
-    }
-    
-    async function processRazorpay(amount, name, message) {
-      // In production, fetch order from backend
-      const options = {
-        key: 'YOUR_RAZORPAY_KEY_ID', // Replace with env var
-        amount: Math.round(amount * 100),
-        currency: 'INR',
-        name: 'Stream Tips',
-        description: 'Tip from ' + name,
-        handler: function(response) {
-          alert('Payment successful! Payment ID: ' + response.razorpay_payment_id);
-          resetForm();
-        },
-        prefill: {
-          name: name
-        },
-        theme: {
-          color: '#7c5cff'
-        }
-      };
-      
-      const rzp = new Razorpay(options);
-      rzp.open();
-    }
-    
-    async function processPayPal(amount, name, message) {
-      // Redirect to PayPal or use PayPal buttons
-      alert('PayPal integration - redirecting to PayPal...');
-      // In production, integrate PayPal SDK properly
-      resetForm();
-    }
-    
-    async function processCashfree(amount, name, message) {
-      // Redirect to Cashfree checkout
-      alert('Cashfree integration - redirecting to Cashfree...');
-      // In production, integrate Cashfree SDK properly
-      resetForm();
-    }
-    
-    function resetForm() {
-      document.getElementById('f-name').value = '';
-      document.getElementById('f-email').value = '';
-      document.getElementById('f-amount').value = '';
-      document.getElementById('f-msg').value = '';
-      selectedAmount = 0;
-      document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('selected'));
-      goStep(1);
-    }
-    
-    function loadChat() {
-      const url = document.getElementById('chat-url').value.trim();
-      const wrapper = document.getElementById('chat-wrapper');
-      
-      if (!url) {
-        wrapper.innerHTML = '<div class="chat-placeholder">Enter a chat URL above to load live chat</div>';
-        return;
-      }
-      
-      // Default: iframe for chat URLs
-      wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
-      
-      // Wait for iframe to load then scale
-      const iframe = document.getElementById('chat-frame');
-      iframe.onload = () => {
-        scaleChat();
-        showAlert('Chat loaded successfully!', 'success');
-      };
-      setTimeout(() => {
-        scaleChat();
-        showAlert('Chat loaded successfully!', 'success');
-      }, 1000); // Fallback timeout
-    }
-    
-    function loadMedia() {
-      const url = document.getElementById('media-url').value.trim();
-      const wrapper = document.getElementById('chat-wrapper');
-      
-      if (!url) {
-        showAlert('Please enter a media URL', 'warning');
-        return;
-      }
-      
-      // Detect media type and render accordingly
-      if (isGif(url)) {
-        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="GIF" class="responsive-media"></div>';
-        showAlert('GIF loaded successfully!', 'success');
-      } else if (isVideo(url)) {
-        wrapper.innerHTML = '<div class="media-content"><video src="' + url + '" controls autoplay loop class="responsive-media"></video></div>';
-        showAlert('Video loaded successfully!', 'success');
-      } else if (isImage(url)) {
-        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media"></div>';
-        showAlert('Image loaded successfully!', 'success');
-      } else if (isDirectMediaURL(url)) {
-        // Generic media handler - try as image first
-        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media" onerror="this.onerror=null;this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23222%22 width=%22400%22 height=%22300%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2218%22>Failed to load media</text></svg>\';"></div>';
-        showAlert('Media loaded successfully!', 'success');
-      } else {
-        // Try as iframe fallback
-        wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
-        const iframe = document.getElementById('chat-frame');
-        iframe.onload = () => {
-          scaleChat();
-          showAlert('Content loaded!', 'success');
-        };
-        setTimeout(() => {
-          scaleChat();
-          showAlert('Content loaded!', 'success');
-        }, 1000);
-      }
-    }
-    
-    // Helper functions to detect media types
-    function isImage(url) {
-      return /\.(gif|jpg|jpeg|png|webp|svg|avif)(\?.*)?$/i.test(url);
-    }
-    
-    function isGif(url) {
-      return /\.gif(\?.*)?$/i.test(url);
-    }
-    
-    function isVideo(url) {
-      return /\.(mp4|webm|ogg|mov|avi|mkv)(\?.*)?$/i.test(url);
-    }
-    
-    function isDirectMediaURL(url) {
-      // Check for common CDN patterns that serve images
-      return url.includes('i.imgur.com') || 
-             url.includes('cdn.') || 
-             url.includes('media.') ||
-             url.includes('images.');
-    }
-    
-    // Alert/notification system with animations
-    function showAlert(message, type = 'info') {
-      // Remove existing alerts
-      const existingAlert = document.querySelector('.animated-alert');
-      if (existingAlert) {
-        existingAlert.remove();
-      }
-      
-      const alertDiv = document.createElement('div');
-      alertDiv.className = 'animated-alert';
-      
-      const icons = {
-        info: 'ℹ️',
-        success: '✅',
-        warning: '⚠️',
-        error: '❌'
-      };
-      
-      alertDiv.innerHTML = '<span class="alert-icon">' + icons[type] + '</span><span class="alert-message">' + message + '</span>';
-      document.body.appendChild(alertDiv);
-      
-      // Trigger animation
-      setTimeout(() => alertDiv.classList.add('show'), 10);
-      
-      // Auto-remove after 3 seconds
-      setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 300);
-      }, 3000);
-    }
-    
-    function scaleChat() {
-      const wrapper = document.getElementById('chat-wrapper');
-      const scaler = document.getElementById('chat-scaler');
-      const iframe = document.getElementById('chat-frame');
-      
-      if (!wrapper || !scaler || !iframe) return;
-      
-      const wrapperRect = wrapper.getBoundingClientRect();
-      const targetWidth = 400; // Standard chat width
-      const targetHeight = 600; // Standard chat height
-      
-      // Calculate scale to fit
-      const scaleX = wrapperRect.width / targetWidth;
-      const scaleY = wrapperRect.height / targetHeight;
-      const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
-      
-      scaler.style.transform = `scale(${scale})`;
-      
-      // Set iframe size before scaling
-      iframe.style.width = targetWidth + 'px';
-      iframe.style.height = targetHeight + 'px';
-    }
-    
-    // Handle window resize
-    window.addEventListener('resize', scaleChat);
-  </script>
+    el.innerHTML = tipHistory.map(t => `
+      <div class="hist-item">
+        <span class="hist-name">${t.name}</span>
+        <span class="hist-ts">${new Date(t.ts).toLocaleTimeString()}</span>
+        <span class="hist-amt">₹${Math.round(t.amount)}</span>
+      </div>
+    `).join('');
+  }
+
+  function addTopTip(name, amt) {
+    const list = document.getElementById('rt-list');
+    const item = document.createElement('div');
+    item.className = 'rt-item';
+    item.innerHTML = `<span class="rt-name">${name}</span><span class="rt-val">₹${Math.round(amt)}</span>`;
+    list.insertBefore(item, list.firstChild);
+    if (list.children.length > 5) list.removeChild(list.lastChild);
+  }
+
+  function switchTab(t) {
+    document.getElementById('tab-tip').classList.toggle('active', t === 'tip');
+    document.getElementById('tab-history').classList.toggle('active', t === 'history');
+    document.getElementById('panel-tip').style.display    = t === 'tip' ? 'block' : 'none';
+    document.getElementById('panel-history').style.display = t === 'history' ? 'block' : 'none';
+    if (t === 'history') renderHistory();
+  }
+
+  function resetFlow() {
+    state = {};
+    ['f-name','f-email','f-amount','f-msg'].forEach(id => document.getElementById(id).value = '');
+    document.querySelectorAll('.amt-chip').forEach(c => c.classList.remove('sel'));
+    goStep(1);
+  }
+
+  // ==========================================
+  // INIT
+  // ==========================================
+  function init() {
+    loadYT(ENV.DEFAULT_YOUTUBE_URL);
+    initSEChat();
+    renderHistory();
+  }
+  init();
+</script>
 </body>
 </html>
