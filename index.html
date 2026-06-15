@@ -420,9 +420,13 @@
     <!-- Chat Box -->
     <div class="chat-container">
       <div class="panel-title">Live Chat / Media Viewer</div>
-      <div class="chat-input-group">
-        <input type="text" id="chat-url" placeholder="Enter chat URL, image, video, or GIF URL...">
-        <button class="btn btn-primary" onclick="loadChat()" style="padding:8px 14px;">Load</button>
+      <div class="chat-input-group" style="flex-direction: column; gap: 10px;">
+        <input type="text" id="chat-url" placeholder="Enter chat URL (StreamElements, Twitch, etc.)...">
+        <input type="text" id="media-url" placeholder="Or enter image/video/GIF URL directly...">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" onclick="loadChat()" style="flex: 1; padding: 8px 14px;">Load Chat</button>
+          <button class="btn btn-ghost" onclick="loadMedia()" style="flex: 1; padding: 8px 14px;">Load Media</button>
+        </div>
       </div>
       <div class="chat-frame-wrapper" id="chat-wrapper">
         <div class="chat-placeholder">Enter a URL above to load live chat, image, video, or GIF</div>
@@ -436,9 +440,9 @@
   <script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
   
   <script>
-    // Configuration from environment
-    const DEFAULT_YOUTUBE_URL = 'DEFAULT_YOUTUBE_URL';
-    const SE_CHAT_URL = 'SE_CHAT_URL';
+    // Configuration from environment - these will be replaced by Vercel at build time
+    const DEFAULT_YOUTUBE_URL = typeof process !== 'undefined' ? process.env.DEFAULT_YOUTUBE_URL : 'DEFAULT_YOUTUBE_URL';
+    const SE_CHAT_URL = typeof process !== 'undefined' ? process.env.SE_CHAT_URL : 'SE_CHAT_URL';
     
     let selectedAmount = 0;
     
@@ -452,7 +456,7 @@
         videoFrame.src = 'https://www.youtube.com/embed/live_stream?channel=UC_x5XG1OV2P6uZZ5FSM9Ttw'; // Default NASA
       }
       
-      // Load default chat
+      // Load default chat from environment variable
       const chatInput = document.getElementById('chat-url');
       if (SE_CHAT_URL && SE_CHAT_URL !== 'SE_CHAT_URL') {
         chatInput.value = SE_CHAT_URL;
@@ -603,33 +607,60 @@
       const wrapper = document.getElementById('chat-wrapper');
       
       if (!url) {
-        wrapper.innerHTML = '<div class="chat-placeholder">Enter a URL above to load live chat, image, video, or GIF</div>';
+        wrapper.innerHTML = '<div class="chat-placeholder">Enter a chat URL above to load live chat</div>';
+        return;
+      }
+      
+      // Default: iframe for chat URLs
+      wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
+      
+      // Wait for iframe to load then scale
+      const iframe = document.getElementById('chat-frame');
+      iframe.onload = () => {
+        scaleChat();
+        showAlert('Chat loaded successfully!', 'success');
+      };
+      setTimeout(() => {
+        scaleChat();
+        showAlert('Chat loaded successfully!', 'success');
+      }, 1000); // Fallback timeout
+    }
+    
+    function loadMedia() {
+      const url = document.getElementById('media-url').value.trim();
+      const wrapper = document.getElementById('chat-wrapper');
+      
+      if (!url) {
+        showAlert('Please enter a media URL', 'warning');
         return;
       }
       
       // Detect media type and render accordingly
-      if (isImage(url)) {
-        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media"></div>';
-        showAlert('Image loaded successfully!');
+      if (isGif(url)) {
+        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="GIF" class="responsive-media"></div>';
+        showAlert('GIF loaded successfully!', 'success');
       } else if (isVideo(url)) {
         wrapper.innerHTML = '<div class="media-content"><video src="' + url + '" controls autoplay loop class="responsive-media"></video></div>';
-        showAlert('Video loaded successfully!');
-      } else if (isGif(url)) {
-        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="GIF" class="responsive-media"></div>';
-        showAlert('GIF loaded successfully!');
-      } else if (isDirectMediaURL(url)) {
-        // Generic media handler
+        showAlert('Video loaded successfully!', 'success');
+      } else if (isImage(url)) {
         wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media"></div>';
-        showAlert('Media loaded successfully!');
+        showAlert('Image loaded successfully!', 'success');
+      } else if (isDirectMediaURL(url)) {
+        // Generic media handler - try as image first
+        wrapper.innerHTML = '<div class="media-content"><img src="' + url + '" alt="Media" class="responsive-media" onerror="this.onerror=null;this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22><rect fill=%22%23222%22 width=%22400%22 height=%22300%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2218%22>Failed to load media</text></svg>\';"></div>';
+        showAlert('Media loaded successfully!', 'success');
       } else {
-        // Default: iframe for chat URLs
+        // Try as iframe fallback
         wrapper.innerHTML = '<div class="chat-scaler" id="chat-scaler"><iframe id="chat-frame" src="' + url + '" allow="clipboard-write"></iframe></div>';
-        
-        // Wait for iframe to load then scale
         const iframe = document.getElementById('chat-frame');
-        iframe.onload = () => scaleChat();
-        setTimeout(scaleChat, 1000); // Fallback timeout
-        showAlert('Chat loaded successfully!');
+        iframe.onload = () => {
+          scaleChat();
+          showAlert('Content loaded!', 'success');
+        };
+        setTimeout(() => {
+          scaleChat();
+          showAlert('Content loaded!', 'success');
+        }, 1000);
       }
     }
     
