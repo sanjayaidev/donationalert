@@ -8,4 +8,9 @@
   "env": {
     "PRODUCTION_MODE": "true"
   }
+  "crons": [
+    {
+      "path": "/api/poll-payments",
+      "schedule": "* * * * *"
+    }
 }
