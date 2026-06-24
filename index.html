@@ -756,15 +756,17 @@
   // SE overlay URL is NOT shown in the UI
   // ==========================================
   // ENV values are injected by Vercel at build time via environment variables.
-  // Set DEFAULT_YOUTUBE_URL and SE_CHAT_URL in your Vercel project settings.
+  // Set DEFAULT_YOUTUBE_URL, SE_CHAT_URL and PRODUCTION_MODE in your Vercel project settings.
   const ENV = {
     DEFAULT_YOUTUBE_URL: '{{DEFAULT_YOUTUBE_URL}}',
     SE_CHAT_URL: '{{SE_CHAT_URL}}',
+    PRODUCTION_MODE: '{{PRODUCTION_MODE}}',
     DONATION_ENDPOINT: 'https://bvavtdyxuzzabzgodbjw.supabase.co/functions/v1/donation'
   };
   // Vercel replaces {{VAR}} at build time; fall back to empty string if not set
   if (ENV.DEFAULT_YOUTUBE_URL === '{{DEFAULT_YOUTUBE_URL}}') ENV.DEFAULT_YOUTUBE_URL = '';
   if (ENV.SE_CHAT_URL === '{{SE_CHAT_URL}}') ENV.SE_CHAT_URL = '';
+  if (ENV.PRODUCTION_MODE === '{{PRODUCTION_MODE}}') ENV.PRODUCTION_MODE = 'false';
 
   // ==========================================
   // YOUTUBE: robust embed with fallback
@@ -845,10 +847,9 @@
   // ==========================================
   // STREAMELEMENTS — env-only + UI input
   // ==========================================
-  const SE_CHAT_HARDCODED = 'https://streamelements.com/overlay/6a2f903bf2ed77a9eab2af9e/-CfHBVXo37hUWEw8eZZ4MvlfzFtAeHOsfQgZjJWigVHG9XSI';
 
   function initSEChat() {
-    const url = SE_CHAT_HARDCODED;
+    const url = ENV.SE_CHAT_URL || 'https://streamelements.com/overlay/6a2f903bf2ed77a9eab2af9e/-CfHBVXo37hUWEw8eZZ4MvlfzFtAeHOsfQgZjJWigVHG9XSI';
     const iframe = document.getElementById('seChatIframe');
     const wrap = document.getElementById('seChatWrap'); // Add this ID to your HTML
     
@@ -1054,8 +1055,8 @@ async function handleRazorpay() {
     description: 'Tip for streamer',
     order_id: data.razorpay_order_id,
     handler: function(response) {
-      // Success callback
-      window.location.href = `/thankyou?order_id=${data.order_id}&payment_id=${response.razorpay_payment_id}`;
+      // Success callback - pass razorpay_order_id and razorpay_signature for verification
+      window.location.href = `/thankyou?order_id=${data.order_id}&provider=razorpay&payment_id=${response.razorpay_payment_id}&razorpay_order_id=${data.razorpay_order_id}&razorpay_signature=${response.razorpay_signature}`;
     },
     prefill: {
       name: state.name,

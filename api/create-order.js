@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-
+  
   const { name, email, amount, message, provider } = req.body;
-
+  
   // Validate required fields
   if (!name) {
     return res.status(400).json({ 
@@ -20,9 +20,11 @@ export default async function handler(req, res) {
     });
   }
   
-  if (!amount || amount < 1) {
+  // Validate amount as an actual finite number
+  const parsedAmount = parseFloat(amount);
+  if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
     return res.status(400).json({ 
-      error: 'Invalid amount. Minimum amount is 1',
+      error: 'Invalid amount. Must be a positive number',
       field: 'amount',
       code: 'INVALID_AMOUNT'
     });
@@ -32,32 +34,28 @@ export default async function handler(req, res) {
   const origin  = req.headers.origin || req.headers.host;
   const baseUrl = origin.startsWith('http') ? origin : 'https://' + origin;
 
-  // Detect environment mode - for Vercel production deployments
-  const isTestMode = process.env.VERCEL_ENV === 'preview' || 
-                     (process.env.NODE_ENV === 'test') ||
-                     !process.env.PRODUCTION_MODE;
+  // Single source of truth: PRODUCTION_MODE
+  const isTestMode = process.env.PRODUCTION_MODE !== 'true';
   
   const modeInfo = {
     mode: isTestMode ? 'TEST' : 'PRODUCTION',
-    node_env: process.env.NODE_ENV || 'development',
-    vercel_env: process.env.VERCEL_ENV || 'not-set',
-    production_mode: process.env.PRODUCTION_MODE || 'not-set'
+    production_mode: process.env.PRODUCTION_MODE || 'unset'
   };
   
   console.log(`[Payment Request] Mode: ${modeInfo.mode}, Provider: ${provider || 'cashfree'}`, modeInfo);
 
   // Handle different payment providers
   if (provider === 'razorpay') {
-    return handleRazorpay(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo });
+    return handleRazorpay(req, res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   } else if (provider === 'paypal') {
-    return handlePaypal(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo });
+    return handlePaypal(req, res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   } else {
     // Default to Cashfree
-    return handleCashfree(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo });
+    return handleCashfree(req, res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   }
 }
 
-async function handleCashfree(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo }) {
+async function handleCashfree(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo, isTestMode }) {
   // Validate credentials - check for both production and sandbox credentials
   const hasProductionCredentials = process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY;
   const hasSandboxCredentials = process.env.CASHFREE_SANDBOX_APP_ID && process.env.CASHFREE_SANDBOX_SECRET_KEY;
@@ -72,17 +70,17 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
   }
   
   // Use sandbox credentials in test mode if available, otherwise use production credentials
-  const appId = (modeInfo.mode === 'TEST' && process.env.CASHFREE_SANDBOX_APP_ID) 
+  const appId = (isTestMode && process.env.CASHFREE_SANDBOX_APP_ID) 
                 ? process.env.CASHFREE_SANDBOX_APP_ID 
                 : process.env.CASHFREE_APP_ID;
-  const secretKey = (modeInfo.mode === 'TEST' && process.env.CASHFREE_SANDBOX_SECRET_KEY) 
+  const secretKey = (isTestMode && process.env.CASHFREE_SANDBOX_SECRET_KEY) 
                     ? process.env.CASHFREE_SANDBOX_SECRET_KEY 
                     : process.env.CASHFREE_SECRET_KEY;
   
   if (!appId) {
     return res.status(500).json({
       error: `Cashfree App ID not configured for ${modeInfo.mode} mode`,
-      field: modeInfo.mode === 'TEST' ? 'CASHFREE_SANDBOX_APP_ID' : 'CASHFREE_APP_ID',
+      field: isTestMode ? 'CASHFREE_SANDBOX_APP_ID' : 'CASHFREE_APP_ID',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
@@ -90,17 +88,14 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
   if (!secretKey) {
     return res.status(500).json({
       error: `Cashfree Secret Key not configured for ${modeInfo.mode} mode`,
-      field: modeInfo.mode === 'TEST' ? 'CASHFREE_SANDBOX_SECRET_KEY' : 'CASHFREE_SECRET_KEY',
+      field: isTestMode ? 'CASHFREE_SANDBOX_SECRET_KEY' : 'CASHFREE_SECRET_KEY',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
   }
   
   try {
-    // Determine Cashfree API endpoint based on environment
-    const isTestMode = process.env.NODE_ENV === 'test' || 
-                       process.env.VERCEL_ENV === 'preview' ||
-                       !process.env.PRODUCTION_MODE;
+    // Determine Cashfree API endpoint based on PRODUCTION_MODE
     const cfBaseUrl = isTestMode ? 'https://sandbox.cashfree.com/pg' : 'https://api.cashfree.com/pg';
     
     const cfRes = await fetch(cfBaseUrl + '/orders', {
@@ -123,7 +118,7 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
         },
         order_meta: {
           notify_url: process.env.WEBHOOK_URL,
-          return_url: `${baseUrl}/thankyou?order_id=${orderId}`,
+          return_url: `${baseUrl}/thankyou?order_id=${orderId}&provider=cashfree`,
         },
         order_tags: {
           message: message || '',
@@ -171,7 +166,10 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
 
     return res.status(200).json({
       order_id:           order.order_id,
+      razorpay_order_id:  null,
+      paypal_approval_url: null,
       payment_session_id: order.payment_session_id,
+      provider: 'cashfree',
       mode: modeInfo
     });
 
@@ -184,20 +182,40 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
   }
 }
 
-async function handleRazorpay(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo }) {
-  // Validate credentials
-  if (!process.env.RAZORPAY_KEY_ID) {
+async function handleRazorpay(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo, isTestMode }) {
+  // Validate credentials - check for both production and test credentials
+  const hasProductionCredentials = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET;
+  const hasTestCredentials = process.env.RAZORPAY_TEST_KEY_ID && process.env.RAZORPAY_TEST_KEY_SECRET;
+  
+  if (!hasProductionCredentials && !hasTestCredentials) {
     return res.status(500).json({
-      error: 'Razorpay Key ID not configured',
-      field: 'RAZORPAY_KEY_ID',
+      error: 'Razorpay credentials not configured',
+      field: 'RAZORPAY_KEY_ID or RAZORPAY_TEST_KEY_ID',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
   }
-  if (!process.env.RAZORPAY_KEY_SECRET) {
+  
+  // Use test credentials in test mode if available, otherwise use production credentials
+  const keyId = (isTestMode && process.env.RAZORPAY_TEST_KEY_ID) 
+                ? process.env.RAZORPAY_TEST_KEY_ID 
+                : process.env.RAZORPAY_KEY_ID;
+  const keySecret = (isTestMode && process.env.RAZORPAY_TEST_KEY_SECRET) 
+                    ? process.env.RAZORPAY_TEST_KEY_SECRET 
+                    : process.env.RAZORPAY_KEY_SECRET;
+  
+  if (!keyId) {
     return res.status(500).json({
-      error: 'Razorpay Key Secret not configured',
-      field: 'RAZORPAY_KEY_SECRET',
+      error: `Razorpay Key ID not configured for ${modeInfo.mode} mode`,
+      field: isTestMode ? 'RAZORPAY_TEST_KEY_ID' : 'RAZORPAY_KEY_ID',
+      code: 'MISSING_CREDENTIAL',
+      mode: modeInfo
+    });
+  }
+  if (!keySecret) {
+    return res.status(500).json({
+      error: `Razorpay Key Secret not configured for ${modeInfo.mode} mode`,
+      field: isTestMode ? 'RAZORPAY_TEST_KEY_SECRET' : 'RAZORPAY_KEY_SECRET',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
@@ -208,7 +226,7 @@ async function handleRazorpay(req, res, { name, email, amount, message, orderId,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + Buffer.from(process.env.RAZORPAY_KEY_ID + ':' + process.env.RAZORPAY_KEY_SECRET).toString('base64'),
+        'Authorization': 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64'),
       },
       body: JSON.stringify({
         amount: Math.round(amount * 100),
@@ -232,10 +250,29 @@ async function handleRazorpay(req, res, { name, email, amount, message, orderId,
       });
     }
 
+    // Fire and forget donation log webhook (same as Cashfree)
+    if (process.env.SUPABASE_FUNCTIONS_URL) {
+      fetch(process.env.SUPABASE_FUNCTIONS_URL + '/poll', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret:         process.env.LOG_SECRET,
+          order_id:       order.id,
+          amount,
+          customer_name:  name,
+          customer_email: email,
+          message:        message || '',
+          provider:       'razorpay',
+        }),
+      }).catch(() => {});
+    }
+
     return res.status(200).json({
       order_id: orderId,
       razorpay_order_id: order.id,
-      razorpay_key_id: process.env.RAZORPAY_KEY_ID,
+      razorpay_key_id: keyId,
+      paypal_approval_url: null,
+      provider: 'razorpay',
       mode: modeInfo
     });
 
@@ -248,20 +285,43 @@ async function handleRazorpay(req, res, { name, email, amount, message, orderId,
   }
 }
 
-async function handlePaypal(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo }) {
-  // Validate credentials
-  if (!process.env.PAYPAL_CLIENT_ID) {
+async function handlePaypal(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo, isTestMode }) {
+  // Validate credentials - check for both production and sandbox credentials
+  const hasProductionCredentials = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET;
+  const hasSandboxCredentials = process.env.PAYPAL_SANDBOX_CLIENT_ID && process.env.PAYPAL_SANDBOX_CLIENT_SECRET;
+  
+  if (!hasProductionCredentials && !hasSandboxCredentials) {
     return res.status(500).json({
-      error: 'PayPal Client ID not configured',
-      field: 'PAYPAL_CLIENT_ID',
+      error: 'PayPal credentials not configured',
+      field: 'PAYPAL_CLIENT_ID or PAYPAL_SANDBOX_CLIENT_ID',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
   }
-  if (!process.env.PAYPAL_CLIENT_SECRET) {
+  
+  // Use sandbox credentials in test mode if available, otherwise use production credentials
+  const clientId = (isTestMode && process.env.PAYPAL_SANDBOX_CLIENT_ID) 
+                   ? process.env.PAYPAL_SANDBOX_CLIENT_ID 
+                   : process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = (isTestMode && process.env.PAYPAL_SANDBOX_CLIENT_SECRET) 
+                       ? process.env.PAYPAL_SANDBOX_CLIENT_SECRET 
+                       : process.env.PAYPAL_CLIENT_SECRET;
+  
+  // Switch API endpoint based on mode
+  const paypalBaseUrl = isTestMode ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+  
+  if (!clientId) {
     return res.status(500).json({
-      error: 'PayPal Client Secret not configured',
-      field: 'PAYPAL_CLIENT_SECRET',
+      error: `PayPal Client ID not configured for ${modeInfo.mode} mode`,
+      field: isTestMode ? 'PAYPAL_SANDBOX_CLIENT_ID' : 'PAYPAL_CLIENT_ID',
+      code: 'MISSING_CREDENTIAL',
+      mode: modeInfo
+    });
+  }
+  if (!clientSecret) {
+    return res.status(500).json({
+      error: `PayPal Client Secret not configured for ${modeInfo.mode} mode`,
+      field: isTestMode ? 'PAYPAL_SANDBOX_CLIENT_SECRET' : 'PAYPAL_CLIENT_SECRET',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
@@ -269,11 +329,11 @@ async function handlePaypal(req, res, { name, email, amount, message, orderId, b
   
   try {
     // Get access token
-    const tokenRes = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+    const tokenRes = await fetch(paypalBaseUrl + '/v1/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + Buffer.from(process.env.PAYPAL_CLIENT_ID + ':' + process.env.PAYPAL_CLIENT_SECRET).toString('base64'),
+        'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
       },
       body: 'grant_type=client_credentials',
     });
@@ -286,8 +346,8 @@ async function handlePaypal(req, res, { name, email, amount, message, orderId, b
       });
     }
 
-    // Create payment
-    const paymentRes = await fetch('https://api-m.paypal.com/v1/payments/payment', {
+    // Create payment - store name/email/message in custom field
+    const paymentRes = await fetch(paypalBaseUrl + '/v1/payments/payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -304,6 +364,12 @@ async function handlePaypal(req, res, { name, email, amount, message, orderId, b
             currency: 'USD',
           },
           description: 'Tip for streamer',
+          custom: JSON.stringify({
+            name: name,
+            email: email,
+            message: message || '',
+            order_id: orderId,
+          }),
           item_list: {
             items: [{
               name: 'Tip',
@@ -314,7 +380,7 @@ async function handlePaypal(req, res, { name, email, amount, message, orderId, b
           },
         }],
         redirect_urls: {
-          return_url: `${baseUrl}/thankyou?order_id=${orderId}`,
+          return_url: `${baseUrl}/thankyou?order_id=${orderId}&provider=paypal`,
           cancel_url: `${baseUrl}/`,
         },
       }),
@@ -339,6 +405,8 @@ async function handlePaypal(req, res, { name, email, amount, message, orderId, b
     return res.status(200).json({
       order_id: orderId,
       paypal_approval_url: approvalUrl,
+      razorpay_order_id: null,
+      provider: 'paypal',
       mode: modeInfo
     });
 
