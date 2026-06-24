@@ -1,5 +1,5 @@
 {
-  "buildCommand": "sed -i \"s|{{DEFAULT_YOUTUBE_URL}}|$DEFAULT_YOUTUBE_URL|g\" index.html && sed -i \"s|{{SE_CHAT_URL}}|$SE_CHAT_URL|g\" index.html && sed -i \"s|{{PRODUCTION_MODE}}|$PRODUCTION_MODE|g\" index.html",
+  "buildCommand": "sed -i \"s|{{DEFAULT_YOUTUBE_URL}}|$DEFAULT_YOUTUBE_URL|g\" index.html && sed -i \"s|{{SE_CHAT_URL}}|$SE_CHAT_URL|g\" index.html && sed -i \"s|{{PRODUCTION_MODE}}|$PRODUCTION_MODE|g\" index.html && sed -i \"s|{{PRODUCTION_MODE}}|$PRODUCTION_MODE|g\" thankyou.html",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
@@ -7,10 +7,11 @@
   ],
   "env": {
     "PRODUCTION_MODE": "true"
-  }
+  },
   "crons": [
     {
       "path": "/api/poll-payments",
       "schedule": "* * * * *"
     }
+  ]
 }
