@@ -1012,8 +1012,10 @@ async function handleCashfree() {
   }
 
   // Step 2: Open Cashfree checkout
+  // Use sandbox mode for test/preview environments, production otherwise
+  const cfMode = data.mode && data.mode.mode === 'TEST' ? 'sandbox' : 'production';
   const cashfree = Cashfree({
-    mode: 'production'
+    mode: cfMode
   });
 
   await cashfree.checkout({

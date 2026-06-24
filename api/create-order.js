@@ -32,18 +32,19 @@ export default async function handler(req, res) {
   const origin  = req.headers.origin || req.headers.host;
   const baseUrl = origin.startsWith('http') ? origin : 'https://' + origin;
 
-  // Detect environment mode
-  const isTestMode = process.env.NODE_ENV === 'test' || 
-                     process.env.VERCEL_ENV === 'preview' ||
+  // Detect environment mode - for Vercel production deployments
+  const isTestMode = process.env.VERCEL_ENV === 'preview' || 
+                     (process.env.NODE_ENV === 'test') ||
                      !process.env.PRODUCTION_MODE;
   
   const modeInfo = {
     mode: isTestMode ? 'TEST' : 'PRODUCTION',
     node_env: process.env.NODE_ENV || 'development',
-    vercel_env: process.env.VERCEL_ENV || 'not-set'
+    vercel_env: process.env.VERCEL_ENV || 'not-set',
+    production_mode: process.env.PRODUCTION_MODE || 'not-set'
   };
   
-  console.log(`[Payment Request] Mode: ${modeInfo.mode}, Provider: ${provider || 'cashfree'}`);
+  console.log(`[Payment Request] Mode: ${modeInfo.mode}, Provider: ${provider || 'cashfree'}`, modeInfo);
 
   // Handle different payment providers
   if (provider === 'razorpay') {
@@ -57,32 +58,58 @@ export default async function handler(req, res) {
 }
 
 async function handleCashfree(req, res, { name, email, amount, message, orderId, baseUrl, modeInfo }) {
-  // Validate credentials
-  if (!process.env.CASHFREE_APP_ID) {
+  // Validate credentials - check for both production and sandbox credentials
+  const hasProductionCredentials = process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY;
+  const hasSandboxCredentials = process.env.CASHFREE_SANDBOX_APP_ID && process.env.CASHFREE_SANDBOX_SECRET_KEY;
+  
+  if (!hasProductionCredentials && !hasSandboxCredentials) {
     return res.status(500).json({
-      error: 'Cashfree App ID not configured',
-      field: 'CASHFREE_APP_ID',
+      error: 'Cashfree credentials not configured',
+      field: 'CASHFREE_APP_ID or CASHFREE_SANDBOX_APP_ID',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
   }
-  if (!process.env.CASHFREE_SECRET_KEY) {
+  
+  // Use sandbox credentials in test mode if available, otherwise use production credentials
+  const appId = (modeInfo.mode === 'TEST' && process.env.CASHFREE_SANDBOX_APP_ID) 
+                ? process.env.CASHFREE_SANDBOX_APP_ID 
+                : process.env.CASHFREE_APP_ID;
+  const secretKey = (modeInfo.mode === 'TEST' && process.env.CASHFREE_SANDBOX_SECRET_KEY) 
+                    ? process.env.CASHFREE_SANDBOX_SECRET_KEY 
+                    : process.env.CASHFREE_SECRET_KEY;
+  
+  if (!appId) {
     return res.status(500).json({
-      error: 'Cashfree Secret Key not configured',
-      field: 'CASHFREE_SECRET_KEY',
+      error: `Cashfree App ID not configured for ${modeInfo.mode} mode`,
+      field: modeInfo.mode === 'TEST' ? 'CASHFREE_SANDBOX_APP_ID' : 'CASHFREE_APP_ID',
+      code: 'MISSING_CREDENTIAL',
+      mode: modeInfo
+    });
+  }
+  if (!secretKey) {
+    return res.status(500).json({
+      error: `Cashfree Secret Key not configured for ${modeInfo.mode} mode`,
+      field: modeInfo.mode === 'TEST' ? 'CASHFREE_SANDBOX_SECRET_KEY' : 'CASHFREE_SECRET_KEY',
       code: 'MISSING_CREDENTIAL',
       mode: modeInfo
     });
   }
   
   try {
-    const cfRes = await fetch('https://api.cashfree.com/pg/orders', {
+    // Determine Cashfree API endpoint based on environment
+    const isTestMode = process.env.NODE_ENV === 'test' || 
+                       process.env.VERCEL_ENV === 'preview' ||
+                       !process.env.PRODUCTION_MODE;
+    const cfBaseUrl = isTestMode ? 'https://sandbox.cashfree.com/pg' : 'https://api.cashfree.com/pg';
+    
+    const cfRes = await fetch(cfBaseUrl + '/orders', {
       method: 'POST',
       headers: {
         'Content-Type':    'application/json',
         'x-api-version':   '2023-08-01',
-        'x-client-id':     process.env.CASHFREE_APP_ID,
-        'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+        'x-client-id':     appId,
+        'x-client-secret': secretKey,
       },
       body: JSON.stringify({
         order_id:     orderId,
@@ -107,6 +134,11 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
     const order = await cfRes.json();
 
     if (!cfRes.ok) {
+      console.error('[Cashfree Error]', {
+        status: cfRes.status,
+        response: order,
+        mode: modeInfo.mode
+      });
       return res.status(500).json({
         error:       'Failed to create Cashfree order',
         cf_status:   cfRes.status,
@@ -115,19 +147,27 @@ async function handleCashfree(req, res, { name, email, amount, message, orderId,
       });
     }
 
+    console.log('[Cashfree Success]', {
+      order_id: order.order_id,
+      payment_session_id: order.payment_session_id ? 'present' : 'missing',
+      mode: modeInfo.mode
+    });
+
     // Fire and forget — edge polls CF and logs result
-    fetch(process.env.SUPABASE_FUNCTIONS_URL + '/poll', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        secret:         process.env.LOG_SECRET,
-        order_id:       order.order_id,
-        amount,
-        customer_name:  name,
-        customer_email: email,
-        message:        message || '',
-      }),
-    }).catch(() => {});
+    if (process.env.SUPABASE_FUNCTIONS_URL) {
+      fetch(process.env.SUPABASE_FUNCTIONS_URL + '/poll', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret:         process.env.LOG_SECRET,
+          order_id:       order.order_id,
+          amount,
+          customer_name:  name,
+          customer_email: email,
+          message:        message || '',
+        }),
+      }).catch(() => {});
+    }
 
     return res.status(200).json({
       order_id:           order.order_id,
