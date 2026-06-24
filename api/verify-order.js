@@ -3,16 +3,17 @@
  *
  * Called by thankyou.html every 3s.
  * Checks payment status directly with the provider,
- * fires StreamElements on first success, saves to Supabase.
+ * fires StreamElements + YouTube chat on first success, saves to Supabase.
  */
-
-import crypto from 'crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const isTestMode   = process.env.PRODUCTION_MODE !== 'true';
 
-// ─── Supabase helpers ────────────────────────────────────────────────────────
+// Supabase youtube edge function URL
+const YT_EDGE_URL  = `${SUPABASE_URL}/functions/v1/youtube`;
+
+// ---- Supabase helpers -------------------------------------------------------
 
 async function getDonation(order_id) {
   const res = await fetch(
@@ -45,7 +46,7 @@ async function updateDonation(order_id, fields) {
   );
 }
 
-// ─── StreamElements ──────────────────────────────────────────────────────────
+// ---- StreamElements ---------------------------------------------------------
 
 async function fireStreamElements({ name, email, amount, currency, message, orderId, provider }) {
   const res = await fetch(
@@ -74,7 +75,68 @@ async function fireStreamElements({ name, email, amount, currency, message, orde
   return { ok: res.ok, data };
 }
 
-// ─── Provider status checkers ────────────────────────────────────────────────
+// ---- YouTube Live Chat ------------------------------------------------------
+// Fire-and-forget: silently skipped if streamer is not using the CG Live app
+// or has no active broadcast. Requires STREAMER_DEVICE_UID env var.
+
+async function postYouTubeChat({ name, amount, currency, message }) {
+  const device_uid = process.env.STREAMER_DEVICE_UID;
+  if (!device_uid) throw new Error('STREAMER_DEVICE_UID not set');
+
+  // Step 1: get broadcast_id from auth_sessions
+  const authRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/auth_sessions?device_uid=eq.${encodeURIComponent(device_uid)}&platform=eq.youtube&slot=eq.default&select=broadcast_id&limit=1`,
+    {
+      headers: {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      },
+    }
+  );
+  const authRows = await authRes.json();
+  const broadcast_id = authRows?.[0]?.broadcast_id;
+  if (!broadcast_id) throw new Error('No active broadcast_id found for streamer');
+
+  // Step 2: get live_chat_id from YouTube edge function
+  const detailsRes  = await fetch(YT_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify({
+      action:       'get_broadcast_details',
+      device_uid,
+      broadcast_id,
+    }),
+  });
+  const detailsData = await detailsRes.json();
+  const live_chat_id = detailsData?.broadcast?.liveStreamingDetails?.activeLiveChatId;
+  if (!live_chat_id) throw new Error('No live_chat_id found for broadcast');
+
+  // Step 3: format and send the message
+  const symbol       = currency === 'USD' ? '$' : '\u20b9';
+  const chatMessage  = `${name} tipped ${symbol}${amount}${message ? ` -- ${message}` : ''}`;
+
+  const sendRes = await fetch(YT_EDGE_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify({
+      action:       'send_live_chat_message',
+      device_uid,
+      live_chat_id,
+      message_text: chatMessage,
+    }),
+  });
+  const sendData = await sendRes.json();
+  if (!sendData.success) throw new Error('YT chat send failed: ' + JSON.stringify(sendData));
+  console.log('[verify] YT chat sent:', chatMessage);
+}
+
+// ---- Provider status checkers -----------------------------------------------
 
 async function checkCashfree(donation) {
   const appId = isTestMode
@@ -160,7 +222,6 @@ async function checkPaypal(donation) {
 
   const ppBase = isTestMode ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
 
-  // Get access token
   const tokenRes  = await fetch(`${ppBase}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -172,7 +233,6 @@ async function checkPaypal(donation) {
   const tokenData = await tokenRes.json();
   if (!tokenRes.ok || !tokenData.access_token) throw new Error('PayPal token fetch failed');
 
-  // Search recent payments and match by custom field
   const searchRes  = await fetch(
     `${ppBase}/v1/payments/payment?count=10&sort_by=create_time&sort_order=descending`,
     { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }
@@ -203,7 +263,7 @@ async function checkPaypal(donation) {
   };
 }
 
-// ─── Main handler ────────────────────────────────────────────────────────────
+// ---- Main handler -----------------------------------------------------------
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -216,7 +276,7 @@ export default async function handler(req, res) {
     const donation = await getDonation(order_id);
     if (!donation) return res.status(404).json({ error: 'Order not found' });
 
-    // 2. Already paid — return immediately (idempotent)
+    // 2. Already paid - return immediately (idempotent)
     if (donation.status === 'paid') {
       return res.status(200).json({
         paid:     true,
@@ -233,7 +293,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ paid: false, status: 'failed' });
     }
 
-    // 4. Still pending — check with provider
+    // 4. Still pending - check with provider
     let result;
     try {
       if (donation.provider === 'razorpay')    result = await checkRazorpay(donation);
@@ -241,7 +301,6 @@ export default async function handler(req, res) {
       else                                     result = await checkCashfree(donation);
     } catch (err) {
       console.error(`[verify] provider check error (${donation.provider}):`, err.message);
-      // Don't fail the poll — return pending so client retries
       return res.status(200).json({ paid: false, status: 'pending', error: err.message });
     }
 
@@ -249,7 +308,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ paid: false, status: result.status || 'pending' });
     }
 
-    // 5. Payment confirmed — fire StreamElements
+    // 5. Payment confirmed - fire StreamElements
     const se = await fireStreamElements({
       name:     result.name,
       email:    result.email,
@@ -260,7 +319,16 @@ export default async function handler(req, res) {
       provider: donation.provider,
     }).catch(err => ({ ok: false, data: { error: err.message } }));
 
-    console.log(`[verify] ${order_id} PAID — SE fired: ${se.ok}`);
+    console.log(`[verify] ${order_id} PAID - SE fired: ${se.ok}`);
+
+    // 5b. Post to YouTube Live chat (fire-and-forget)
+    // Silently skipped if streamer is not using CG Live app or has no active broadcast
+    postYouTubeChat({
+      name:     result.name,
+      amount:   result.amount,
+      currency: result.currency,
+      message:  result.message,
+    }).catch(err => console.log('[verify] YT chat skipped:', err.message));
 
     // 6. Update Supabase row to paid
     await updateDonation(order_id, {
