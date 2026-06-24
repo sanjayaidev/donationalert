@@ -109,7 +109,6 @@ async function handleCashfree(res, { name, email, amount, message, orderId, base
         order_meta: {
           // {order_id} placeholder is REQUIRED by Cashfree — it replaces it on redirect
           return_url: `${baseUrl}/thankyou?order_id={order_id}&provider=cashfree`,
-          notify_url: process.env.WEBHOOK_URL || undefined,
         },
         order_tags: { message: message || '' },
       }),
