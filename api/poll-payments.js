@@ -174,6 +174,7 @@ async function checkPaypal(donation) {
     : process.env.PAYPAL_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) throw new Error('PayPal credentials missing');
+  if (!donation.provider_order_id) throw new Error('No PayPal order id stored for this donation');
 
   const ppBase = isTestMode ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
 
@@ -189,36 +190,39 @@ async function checkPaypal(donation) {
   const tokenData = await tokenRes.json();
   if (!tokenRes.ok || !tokenData.access_token) throw new Error('PayPal token fetch failed');
 
-  // Search payments by custom field containing our order_id (v1 list)
-  const searchRes = await fetch(
-    `${ppBase}/v1/payments/payment?count=5&sort_by=create_time&sort_order=descending`,
-    { headers: { 'Authorization': `Bearer ${tokenData.access_token}` } }
-  );
-  const searchData = await searchRes.json();
+  const authHeader = { 'Authorization': `Bearer ${tokenData.access_token}` };
 
-  // Find payment whose custom field contains our order_id
-  const payment = searchData.payments?.find(p => {
-    try {
-      const custom = JSON.parse(p.transactions?.[0]?.custom || '{}');
-      return custom.order_id === donation.order_id;
-    } catch { return false; }
-  });
+  // Fetch the order directly by id — no more scanning recent payments.
+  const getRes = await fetch(`${ppBase}/v2/checkout/orders/${donation.provider_order_id}`, { headers: authHeader });
+  let order = await getRes.json();
+  if (!getRes.ok) throw new Error('PayPal order fetch failed: ' + JSON.stringify(order));
 
-  if (!payment || payment.state !== 'approved') {
-    return { paid: false, status: payment?.state || 'not_found' };
+  // Buyer approved on PayPal's site but funds aren't captured yet — capture now.
+  if (order.status === 'APPROVED') {
+    const captureRes = await fetch(`${ppBase}/v2/checkout/orders/${donation.provider_order_id}/capture`, {
+      method:  'POST',
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+    });
+    const captureData = await captureRes.json();
+    if (!captureRes.ok) throw new Error('PayPal capture failed: ' + JSON.stringify(captureData));
+    order = captureData;
   }
 
-  let customData = {};
-  try { customData = JSON.parse(payment.transactions[0]?.custom || '{}'); } catch {}
+  if (order.status !== 'COMPLETED') {
+    return { paid: false, status: order.status || 'not_found' };
+  }
+
+  const unit = order.purchase_units?.[0];
+  const capture = unit?.payments?.captures?.[0];
 
   return {
     paid:     true,
-    amount:   parseFloat(payment.transactions[0]?.amount?.total || 0),
-    currency: payment.transactions[0]?.amount?.currency || 'USD',
-    name:     customData.name    || donation.customer_name,
-    email:    customData.email   || donation.customer_email,
-    message:  customData.message || donation.message,
-    provider_order_id: payment.id,
+    amount:   parseFloat(capture?.amount?.value || unit?.amount?.value || 0),
+    currency: capture?.amount?.currency_code || unit?.amount?.currency_code || 'USD',
+    name:     donation.customer_name,
+    email:    donation.customer_email,
+    message:  donation.message,
+    provider_order_id: order.id,
   };
 }
 
