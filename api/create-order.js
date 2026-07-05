@@ -22,7 +22,7 @@ async function supabase(method, path, body) {
   return res;
 }
 
-async function insertPending({ order_id, provider, amount, currency = 'INR', name, email, message }) {
+async function insertPending({ order_id, provider, amount, currency = 'INR', name, email, message, provider_order_id }) {
   await supabase('POST', '/donations', {
     order_id,
     provider,
@@ -32,6 +32,7 @@ async function insertPending({ order_id, provider, amount, currency = 'INR', nam
     customer_name:  name,
     customer_email: email,
     message:        message || '',
+    ...(provider_order_id ? { provider_order_id } : {}),
   });
 }
 
@@ -201,6 +202,14 @@ async function handleRazorpay(res, { name, email, amount, message, orderId, base
 }
 
 // ─── PayPal ──────────────────────────────────────────────────────────────────
+// NOTE: Migrated from the legacy v1 Payments API to the v2 Orders API.
+// The old v1 flow created a payment in 'created' state and required a
+// separate POST /v1/payments/payment/{id}/execute call (using the PayerID
+// PayPal appends to return_url) to actually capture funds. That execute
+// call was missing everywhere in this codebase, so payments never left
+// 'created' state and could never be verified as paid. The v2 Orders API
+// collapses this into a single 'capture' call keyed off a real order id,
+// which also removes the old "scan the last 5-10 payments" lookup hack.
 async function handlePaypal(res, { name, email, amount, message, orderId, baseUrl, modeInfo, isTestMode }) {
   const clientId = isTestMode
     ? (process.env.PAYPAL_SANDBOX_CLIENT_ID     || process.env.PAYPAL_CLIENT_ID)
@@ -230,43 +239,59 @@ async function handlePaypal(res, { name, email, amount, message, orderId, baseUr
       return res.status(500).json({ error: 'PayPal token fetch failed', mode: modeInfo });
     }
 
-    // Create payment (v1 API — redirect flow)
-    const ppRes = await fetch(`${ppBase}/v1/payments/payment`, {
+    // Create order (v2 API). reference_id/custom_id carry our own orderId
+    // so verify-order/poll-payments can match this back to the Supabase row.
+    const ppRes = await fetch(`${ppBase}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
         'Authorization': `Bearer ${tokenData.access_token}`,
       },
       body: JSON.stringify({
-        intent: 'sale',
-        payer:  { payment_method: 'paypal' },
-        transactions: [{
-          amount:      { total: amount.toFixed(2), currency: 'USD' },
-          description: 'Tip for streamer',
-          custom:      JSON.stringify({ name, email, message: message || '', order_id: orderId }),
-          item_list:   { items: [{ name: 'Tip', price: amount.toFixed(2), currency: 'USD', quantity: 1 }] },
+        intent: 'CAPTURE',
+        purchase_units: [{
+          reference_id: orderId,
+          custom_id:    orderId,
+          description:  'Tip for streamer',
+          amount: {
+            currency_code: 'USD',
+            value:         amount.toFixed(2),
+          },
         }],
-        redirect_urls: {
-          return_url: `${baseUrl}/thankyou?order_id=${orderId}&provider=paypal`,
-          cancel_url: `${baseUrl}/`,
+        application_context: {
+          return_url:          `${baseUrl}/thankyou?order_id=${orderId}&provider=paypal`,
+          cancel_url:          `${baseUrl}/`,
+          user_action:         'PAY_NOW',
+          shipping_preference: 'NO_SHIPPING',
         },
       }),
     });
 
-    const payment = await ppRes.json();
-    const approvalUrl = payment.links?.find(l => l.rel === 'approval_url')?.href;
+    const order = await ppRes.json();
+    const approvalUrl = order.links?.find(l => l.rel === 'approve')?.href;
 
     if (!ppRes.ok || !approvalUrl) {
-      return res.status(502).json({ error: 'PayPal payment creation failed', pp_response: payment, mode: modeInfo });
+      console.error('[PayPal] create-order error', { status: ppRes.status, order });
+      return res.status(502).json({ error: 'PayPal order creation failed', pp_response: order, mode: modeInfo });
     }
 
-    await insertPending({ order_id: orderId, provider: 'paypal', amount, currency: 'USD', name, email, message });
+    // Store PayPal's own order id now (not just at capture time) so
+    // verify-order/poll-payments can fetch this exact order directly
+    // instead of searching recent payments.
+    await insertPending({
+      order_id: orderId,
+      provider: 'paypal',
+      amount,
+      currency: 'USD',
+      name, email, message,
+      provider_order_id: order.id,
+    });
 
     return res.status(200).json({
-      order_id:           orderId,
+      order_id:            orderId,
       paypal_approval_url: approvalUrl,
-      provider:           'paypal',
-      mode:               modeInfo,
+      provider:            'paypal',
+      mode:                modeInfo,
     });
 
   } catch (err) {
