@@ -47,6 +47,22 @@ async function updateDonation(order_id, fields) {
 }
 
 // ---- StreamElements ---------------------------------------------------------
+// NOTE: StreamElements' /tips endpoint treats certain provider strings
+// (e.g. "Paypal", "Stripe") as reserved keywords tied to its own native
+// integrations, and rejects them with a generic "provider contains an
+// invalid value" error unless that integration is actually connected on
+// the channel. Custom/unrecognized labels (e.g. "Cashfree", "Razorpay")
+// are accepted freely as import labels. To avoid the collision, map the
+// reserved ones to distinct custom labels before sending.
+const SE_PROVIDER_LABELS = {
+  cashfree: 'Cashfree',
+  razorpay: 'Razorpay',
+  paypal:   'PayPal Tip',
+  stripe:   'Stripe Tip',
+};
+function seProviderLabel(provider) {
+  return SE_PROVIDER_LABELS[provider] || (provider.charAt(0).toUpperCase() + provider.slice(1));
+}
 
 async function fireStreamElements({ name, email, amount, currency, message, orderId, provider }) {
   const res = await fetch(
@@ -63,7 +79,7 @@ async function fireStreamElements({ name, email, amount, currency, message, orde
           userId:   `${provider}-${orderId}`,
           email,
         },
-        provider: provider.charAt(0).toUpperCase() + provider.slice(1),
+        provider: seProviderLabel(provider),
         message:  message || 'Thanks for the tip!',
         amount,
         currency,
