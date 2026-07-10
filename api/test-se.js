@@ -10,6 +10,7 @@ export default async function handler(req, res) {
   const amount   = body.amount   ?? 99;
   const message  = body.message  ?? '🧪 Take the tip';
   const email    = body.email    ?? 'test@console.dev';
+  const provider = body.provider ?? 'Cashfree'; // pass any string to test what SE accepts
 
   try {
     const seRes = await fetch(
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
             userId: 'cf-test-' + Date.now(),
             email,
           },
-          provider: 'Cashfree',
+          provider,
           message,
           amount,
           currency: 'INR',
