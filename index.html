@@ -670,6 +670,7 @@
                 <option value="cashfree">Cashfree</option>
                 <option value="razorpay">Razorpay</option>
                 <option value="paypal">PayPal</option>
+                <option value="stripe">Stripe</option>
               </select>
             </div>
             <div class="pay-gate">
@@ -953,6 +954,9 @@
     } else if (provider === 'paypal') {
       titleEl.textContent = 'PayPal Payment';
       methodsEl.innerHTML = '<span class="pm">PayPal Account</span><span class="pm">Credit Card</span><span class="pm">Debit Card</span>';
+    } else if (provider === 'stripe') {
+      titleEl.textContent = 'Stripe Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">Cards</span><span class="pm">Apple Pay</span><span class="pm">Google Pay</span>';
     } else {
       titleEl.textContent = 'Cashfree Secure Payment';
       methodsEl.innerHTML = '<span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>';
@@ -976,6 +980,9 @@
       return;
     } else if (provider === 'paypal') {
       await handlePaypal();
+      return;
+    } else if (provider === 'stripe') {
+      await handleStripe();
       return;
     } else if (provider === 'cashfree') {
       await handleCashfree();
@@ -1094,6 +1101,31 @@ async function handlePaypal() {
 
   // Open PayPal in popup or redirect
   window.location.href = data.paypal_approval_url;
+}
+
+async function handleStripe() {
+  // Create a Stripe Checkout Session, then redirect to Stripe's hosted page
+  const res = await fetch('/api/create-order', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name:    state.name,
+      email:   state.email,
+      amount:  state.amount,
+      message: state.msg,
+      provider: 'stripe'
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.stripe_checkout_url) {
+    alert('Error: ' + (data.error || 'Failed to create Stripe checkout session'));
+    return;
+  }
+
+  // Redirect to Stripe Checkout
+  window.location.href = data.stripe_checkout_url;
 }
 
   function showBanner(name, amt) {

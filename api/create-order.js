@@ -63,6 +63,8 @@ export default async function handler(req, res) {
     return handleRazorpay(res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   } else if (provider === 'paypal') {
     return handlePaypal(res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
+  } else if (provider === 'stripe') {
+    return handleStripe(res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   } else {
     return handleCashfree(res, { name, email, amount: parsedAmount, message, orderId, baseUrl, modeInfo, isTestMode });
   }
@@ -296,6 +298,87 @@ async function handlePaypal(res, { name, email, amount, message, orderId, baseUr
 
   } catch (err) {
     console.error('[PayPal] exception', err);
+    return res.status(500).json({ error: err.message, mode: modeInfo });
+  }
+}
+
+// ─── Stripe ──────────────────────────────────────────────────────────────────
+// Uses a hosted Checkout Session (redirect flow), the same shape as the
+// PayPal approval-url flow above. Stripe's REST API only accepts
+// application/x-www-form-urlencoded bodies (with bracket notation for
+// nested/array fields) — it does not accept JSON — so we build the body
+// with URLSearchParams instead of JSON.stringify.
+async function handleStripe(res, { name, email, amount, message, orderId, baseUrl, modeInfo, isTestMode }) {
+  const secretKey = isTestMode
+    ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
+    : process.env.STRIPE_SECRET_KEY;
+
+  if (!secretKey) {
+    return res.status(500).json({ error: `Stripe credentials not set for ${modeInfo.mode} mode`, code: 'MISSING_CREDENTIAL' });
+  }
+
+  // Stripe Checkout is a global gateway — default to USD like the PayPal
+  // flow. Override with STRIPE_CURRENCY if you have an account that
+  // supports settling in another currency (e.g. inr).
+  const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+
+  const body = new URLSearchParams();
+  body.append('mode', 'payment');
+  body.append('success_url', `${baseUrl}/thankyou?order_id=${orderId}&provider=stripe&session_id={CHECKOUT_SESSION_ID}`);
+  body.append('cancel_url', `${baseUrl}/`);
+  body.append('client_reference_id', orderId);
+  body.append('customer_email', email);
+  body.append('metadata[order_id]', orderId);
+  body.append('metadata[name]', name);
+  body.append('metadata[message]', message || '');
+  body.append('line_items[0][quantity]', '1');
+  body.append('line_items[0][price_data][currency]', currency);
+  body.append('line_items[0][price_data][unit_amount]', String(Math.round(amount * 100))); // smallest currency unit
+  body.append('line_items[0][price_data][product_data][name]', 'Tip for streamer');
+  if (message) body.append('line_items[0][price_data][product_data][description]', message.slice(0, 250));
+
+  try {
+    const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${secretKey}`,
+      },
+      body: body.toString(),
+    });
+
+    const session = await stripeRes.json();
+
+    if (!stripeRes.ok || !session.url) {
+      console.error('[Stripe] create-session error', { status: stripeRes.status, session });
+      return res.status(502).json({
+        error:           'Stripe checkout session creation failed',
+        stripe_response: session,
+        mode:            modeInfo,
+      });
+    }
+
+    // Store Stripe's own session id now so verify-order/poll-payments can
+    // fetch this exact session directly, same pattern as PayPal's order id.
+    await insertPending({
+      order_id: orderId,
+      provider: 'stripe',
+      amount,
+      currency: currency.toUpperCase(),
+      name, email, message,
+      provider_order_id: session.id,
+    });
+
+    return res.status(200).json({
+      order_id:              orderId,
+      stripe_checkout_url:   session.url,
+      stripe_session_id:     session.id,
+      provider:              'stripe',
+      mode:                  modeInfo,
+    });
+
+  } catch (err) {
+    console.error('[Stripe] exception', err);
     return res.status(500).json({ error: err.message, mode: modeInfo });
   }
 }

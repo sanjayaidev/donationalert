@@ -270,6 +270,37 @@ async function checkPaypal(donation) {
   };
 }
 
+async function checkStripe(donation) {
+  const secretKey = isTestMode
+    ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
+    : process.env.STRIPE_SECRET_KEY;
+
+  if (!secretKey) throw new Error('Stripe credentials missing');
+  if (!donation.provider_order_id) throw new Error('No Stripe session id stored for this donation');
+
+  const res = await fetch(
+    `https://api.stripe.com/v1/checkout/sessions/${donation.provider_order_id}`,
+    { headers: { 'Authorization': `Bearer ${secretKey}` } }
+  );
+  const session = await res.json();
+  if (!res.ok) throw new Error('Stripe fetch error: ' + JSON.stringify(session));
+
+  // payment_status is 'paid' | 'unpaid' | 'no_payment_required'
+  if (session.payment_status !== 'paid') {
+    return { paid: false, status: session.payment_status || session.status || 'not_found' };
+  }
+
+  return {
+    paid:     true,
+    amount:   (session.amount_total || 0) / 100,
+    currency: (session.currency || 'usd').toUpperCase(),
+    name:     session.customer_details?.name  || donation.customer_name,
+    email:    session.customer_details?.email || donation.customer_email,
+    message:  session.metadata?.message       || donation.message,
+    provider_order_id: session.id,
+  };
+}
+
 // ---- Main handler -----------------------------------------------------------
 
 export default async function handler(req, res) {
@@ -305,6 +336,7 @@ export default async function handler(req, res) {
     try {
       if (donation.provider === 'razorpay')    result = await checkRazorpay(donation);
       else if (donation.provider === 'paypal') result = await checkPaypal(donation);
+      else if (donation.provider === 'stripe') result = await checkStripe(donation);
       else                                     result = await checkCashfree(donation);
     } catch (err) {
       console.error(`[verify] provider check error (${donation.provider}):`, err.message);

@@ -8,7 +8,7 @@ A complete donation/tip system for YouTube live streamers. Viewers tip via a bea
 
 | Feature | Detail |
 |---|---|
-| Payment Gateways | Cashfree, Razorpay, PayPal |
+| Payment Gateways | Cashfree, Razorpay, PayPal, Stripe |
 | Stream Alerts | StreamElements tip alert with donor name, amount, message |
 | YouTube Live Chat | Auto posts tip message in your live chat |
 | Supabase Logging | Every donation stored with status (pending/paid/failed) |
@@ -138,6 +138,13 @@ Go to **Supabase Dashboard → Settings → API** and copy:
 2. Go to **My Apps & Credentials**
 3. For testing: use Sandbox credentials
 4. For production: use Live credentials
+
+### Stripe
+1. Create account at [stripe.com](https://stripe.com)
+2. Go to **Developers → API Keys**
+3. For testing: copy the **Secret key** starting with `sk_test_...` → `STRIPE_TEST_SECRET_KEY`
+4. For production: copy the **Secret key** starting with `sk_live_...` → `STRIPE_SECRET_KEY`
+5. No webhook setup needed — same as the other gateways, `thankyou.html` polls `/api/verify-order`, which confirms payment directly with Stripe's Checkout Sessions API.
 
 ---
 
@@ -294,6 +301,13 @@ Go to **Vercel → Project → Settings → Environment Variables** and add:
 | `PAYPAL_SANDBOX_CLIENT_ID` | Sandbox Client ID |
 | `PAYPAL_SANDBOX_CLIENT_SECRET` | Sandbox Client Secret |
 
+#### Stripe
+| Variable | Description |
+|---|---|
+| `STRIPE_SECRET_KEY` | Live Secret Key (`sk_live_...`) |
+| `STRIPE_TEST_SECRET_KEY` | Test Secret Key (`sk_test_...`) |
+| `STRIPE_CURRENCY` | Optional. Checkout currency, e.g. `usd` (default) or `inr` |
+
 #### Stream Config
 | Variable | Description |
 |---|---|
@@ -364,6 +378,7 @@ Go to **Supabase Dashboard → Table Editor → donations** to see all donations
 | Problem | Fix |
 |---|---|
 | Cashfree 401 error | Check `CASHFREE_SANDBOX_APP_ID` / `CASHFREE_APP_ID` are set correctly for your mode |
+| Stripe checkout session fails | Check `STRIPE_SECRET_KEY` / `STRIPE_TEST_SECRET_KEY` are set correctly for your mode |
 | SE alert not firing | Check `SE_CHANNEL_ID` and `SE_JWT_TOKEN` are correct |
 | Payment stuck on pending | Check Vercel function logs under **Deployments → Functions** |
 | YouTube chat not posting | Make sure CG Live app is open and you have an active live broadcast |
