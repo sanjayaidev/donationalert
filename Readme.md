@@ -50,12 +50,16 @@ verify-order.js checks payment status with provider
 ```
 /
 ├── index.html              # Main donation page
+├── donate-popup.html       # Popup overlay page (served at / and /donate)
 ├── thankyou.html           # Payment verification + polling page
 ├── vercel.json             # Vercel config (build command + rewrites)
 ├── api/
 │   ├── create-order.js     # Creates order with payment provider + inserts pending row
 │   ├── verify-order.js     # Polls provider, fires SE + YT chat, updates Supabase
-│   └── test-se.js          # Debug endpoint to fire a test SE tip (optional)
+│   ├── recent-donations.js # Fetches recent paid donations for the feed
+│   ├── media-upload-url.js # Generates signed URLs for Supabase storage uploads
+│   ├── test-se.js          # Debug endpoint to fire a test SE text tip
+│   └── test-media.js       # Debug endpoint to fire test SE image/audio tips
 ```
 
 ---
@@ -155,7 +159,7 @@ Go to **Supabase Dashboard → Settings → API** and copy:
 2. Copy your **Channel ID** → `SE_CHANNEL_ID`
 3. Go to **Account → Access Token** → copy JWT → `SE_JWT_TOKEN`
 
-### 3.2 Add the Overlay Widget
+### 3.2 Add the Overlay Widget (Text Tips)
 
 1. Go to **StreamElements → Overlays → Editor**
 2. Add a **Custom Widget**
@@ -232,6 +236,176 @@ window.addEventListener('onEventReceived', function(obj) {
 
 4. Save the overlay and copy the **Overlay URL**
 5. Add as a **Browser Source** in OBS
+
+---
+
+### 3.3 Custom Media Widget (Image + Audio + Text)
+
+This widget displays images from Supabase storage, plays audio files, and shows text messages. It parses special `[IMAGE]` or `[AUDIO]` prefixes from the tip message along with a `|MEDIA:` URL suffix.
+
+1. Go to **StreamElements → Overlays → Editor**
+2. Add a new **Custom Widget** (separate from the text widget above)
+3. Paste the following into each tab:
+
+**HTML**
+```html
+<div id="media-wrap" style="display:none">
+  <div id="media-name"></div>
+  <div id="media-amount"></div>
+  <div id="media-content"></div>
+  <div id="media-message"></div>
+</div>
+```
+
+**CSS**
+```css
+#media-wrap {
+  background: rgba(36,6,73,0.92);
+  border: 1px solid #a855f7;
+  border-radius: 16px;
+  padding: 18px 22px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #fff;
+  max-width: 500px;
+  animation: mediaFadeIn 0.5s ease;
+}
+#media-name {
+  font-size: 14px;
+  color: #d8aaff;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+#media-amount {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffb020;
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px rgba(255,176,32,0.5);
+}
+#media-content {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+#media-content img {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+#media-content audio {
+  width: 100%;
+  outline: none;
+}
+#media-message {
+  font-size: 13px;
+  color: #e8e8f8;
+  line-height: 1.6;
+}
+@keyframes mediaFadeIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+```
+
+**JS**
+```js
+(function() {
+  let cleanupTimer = null;
+  
+  function cleanupContent() {
+    const content = document.getElementById('media-content');
+    if (!content) return;
+    content.innerHTML = '';
+  }
+  
+  window.addEventListener('onEventReceived', function(obj) {
+    const listener = obj.detail.listener;
+    const event    = obj.detail.event;
+    if (listener !== 'tip-latest') return;
+    
+    const name    = event.name    || event.username || 'Anonymous';
+    const amount  = event.amount  || 0;
+    let message   = event.message || '';
+    
+    if (!message.trim()) return;
+    
+    // Parse media type prefix [IMAGE] or [AUDIO]
+    let mediaType = null;
+    let mediaUrl = null;
+    
+    const imageMatch = message.match(/^\[IMAGE\]/i);
+    const audioMatch = message.match(/^\[AUDIO\]/i);
+    
+    if (imageMatch) {
+      mediaType = 'image';
+      message = message.replace(/^\[IMAGE\]/i, '').trim();
+    } else if (audioMatch) {
+      mediaType = 'audio';
+      message = message.replace(/^\[AUDIO\]/i, '').trim();
+    }
+    
+    // Extract media URL from |MEDIA: suffix
+    const mediaUrlMatch = message.match(/\|MEDIA:(.+)$/);
+    if (mediaUrlMatch) {
+      mediaUrl = mediaUrlMatch[1].trim();
+      message = message.replace(mediaUrlMatch[0], '').trim();
+    }
+    
+    // Update header info
+    document.getElementById('media-name').innerText   = name + ' tipped ₹' + amount;
+    document.getElementById('media-amount').innerText = '';
+    
+    const contentDiv = document.getElementById('media-content');
+    const messageDiv = document.getElementById('media-message');
+    
+    // Clear previous content
+    cleanupContent();
+    
+    // Render based on media type
+    if (mediaType === 'image' && mediaUrl) {
+      const img = document.createElement('img');
+      img.src = mediaUrl;
+      img.alt = 'Donation image';
+      contentDiv.appendChild(img);
+    } else if (mediaType === 'audio' && mediaUrl) {
+      const audio = document.createElement('audio');
+      audio.src = mediaUrl;
+      audio.controls = true;
+      audio.autoplay = true;
+      contentDiv.appendChild(audio);
+    }
+    
+    // Show message (text is always supported alongside media)
+    messageDiv.innerText = message ? '💬 ' + message : '';
+    
+    const wrap = document.getElementById('media-wrap');
+    wrap.style.display = 'block';
+    
+    // Auto-hide after 12 seconds (longer for media)
+    clearTimeout(cleanupTimer);
+    cleanupTimer = setTimeout(() => {
+      wrap.style.display = 'none';
+      cleanupContent();
+    }, 12000);
+  });
+})();
+```
+
+**Fields**
+```json
+{}
+```
+
+4. Save the overlay and copy the **Overlay URL**
+5. Add as a separate **Browser Source** in OBS (position it where you want media alerts to appear)
+
+> **Note:** This widget works with both regular text tips AND media tips. When a donor uploads an image or audio file, the message will include `[IMAGE]` or `[AUDIO]` prefix plus a `|MEDIA:url` suffix that this widget parses automatically.
+
 
 ---
 
@@ -315,6 +489,11 @@ Go to **Vercel → Project → Settings → Environment Variables** and add:
 | `SE_CHAT_URL` | Your StreamElements overlay chat URL |
 | `STREAMER_DEVICE_UID` | CG Live app Device UID (optional, for YT chat) |
 
+#### Testing
+| Variable | Description |
+|---|---|
+| `TEST_PASSWORD` | Password required to trigger test SE alerts via `/api/test-se` and `/api/test-media` endpoints |
+
 ### 5.4 Deploy
 Click **Deploy**. Vercel will build and deploy automatically.
 
@@ -338,7 +517,7 @@ fetch('/api/create-order', {
 ```
 You should get back a `payment_session_id`.
 
-### Test SE alert
+### Test SE alert (text tip)
 ```js
 fetch('/api/test-se', {
   method: 'POST',
@@ -346,6 +525,54 @@ fetch('/api/test-se', {
   body: JSON.stringify({ password: 'your-TEST_PASSWORD-here' })
 }).then(r => r.json()).then(console.log)
 ```
+
+### Test media alerts (image/audio) — from donate-popup page console
+
+First, set your `TEST_PASSWORD` environment variable in Vercel. Then open the browser console on your donate-popup page (`/` or `/donate`) and run:
+
+**Test Image Alert**
+```js
+testImageAlert('Test User', 300, '🖼️ Check out this image!', 'https://your-supabase-project.supabase.co/storage/v1/object/public/donation-media/test-image.png')
+```
+
+**Test Audio Alert**
+```js
+testAudioAlert('Test User', 200, '🔊 Listen to this!', 'https://your-supabase-project.supabase.co/storage/v1/object/public/donation-audio/test-audio.mp3')
+```
+
+Or use raw fetch calls:
+
+```js
+// Test image
+fetch('/api/test-media', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    password: 'your-TEST_PASSWORD-here',
+    type: 'image',
+    name: 'Test User',
+    amount: 300,
+    message: '🖼️ Test image from console!',
+    mediaUrl: 'https://your-supabase-project.supabase.co/storage/v1/object/public/donation-media/test-image.png'
+  })
+}).then(r => r.json()).then(console.log)
+
+// Test audio
+fetch('/api/test-media', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    password: 'your-TEST_PASSWORD-here',
+    type: 'audio',
+    name: 'Test User',
+    amount: 200,
+    message: '🔊 Test audio from console!',
+    mediaUrl: 'https://your-supabase-project.supabase.co/storage/v1/object/public/donation-audio/test-audio.mp3'
+  })
+}).then(r => r.json()).then(console.log)
+```
+
+> **Note:** The test functions `testImageAlert()` and `testAudioAlert()` are automatically available in the browser console when you load the donate-popup page. They will prompt you for the TEST_PASSWORD before sending.
 
 ---
 

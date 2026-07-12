@@ -886,10 +886,21 @@
   // ==========================================
   const ENV = {
     DEFAULT_YOUTUBE_URL: '{{DEFAULT_YOUTUBE_URL}}',
-    SE_CHAT_URL: '{{SE_CHAT_URL}}'
+    SE_CHAT_URL: '{{SE_CHAT_URL}}',
+    SUPABASE_URL: '{{SUPABASE_URL}}',
+    SUPABASE_SERVICE_ROLE_KEY: '{{SUPABASE_SERVICE_ROLE_KEY}}',
+    SE_CHANNEL_ID: '{{SE_CHANNEL_ID}}',
+    SE_JWT_TOKEN: '{{SE_JWT_TOKEN}}'
   };
   if (ENV.DEFAULT_YOUTUBE_URL === '{{DEFAULT_YOUTUBE_URL}}') ENV.DEFAULT_YOUTUBE_URL = '';
   if (ENV.SE_CHAT_URL === '{{SE_CHAT_URL}}') ENV.SE_CHAT_URL = '';
+  if (ENV.SUPABASE_URL === '{{SUPABASE_URL}}') ENV.SUPABASE_URL = '';
+  if (ENV.SUPABASE_SERVICE_ROLE_KEY === '{{SUPABASE_SERVICE_ROLE_KEY}}') ENV.SUPABASE_SERVICE_ROLE_KEY = '';
+  if (ENV.SE_CHANNEL_ID === '{{SE_CHANNEL_ID}}') ENV.SE_CHANNEL_ID = '';
+  if (ENV.SE_JWT_TOKEN === '{{SE_JWT_TOKEN}}') ENV.SE_JWT_TOKEN = '';
+  
+  // Expose config globally for console testing
+  window.STREAMTIP_CONFIG = ENV;
 
   // ===== YouTube: same robust embed logic as the main site =====
   function extractVideoId(input){
@@ -1013,6 +1024,44 @@
 
   fetchRecentDonations();
   setInterval(fetchRecentDonations, 20000);
+
+  // ===== Console test helpers for media alerts (image/audio) =====
+  // Expose test functions globally so they can be called from browser console
+  window.testImageAlert = function(name, amount, message, mediaUrl) {
+    const password = prompt('Enter TEST_PASSWORD to send test image alert:');
+    if (!password) return;
+    fetch('/api/test-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password,
+        type: 'image',
+        name: name || 'Test User',
+        amount: amount || 300,
+        message: message || '🖼️ Test image from console!',
+        mediaUrl: mediaUrl || ''
+      })
+    }).then(r => r.json()).then(console.log).catch(console.error);
+  };
+
+  window.testAudioAlert = function(name, amount, message, mediaUrl) {
+    const password = prompt('Enter TEST_PASSWORD to send test audio alert:');
+    if (!password) return;
+    fetch('/api/test-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password,
+        type: 'audio',
+        name: name || 'Test User',
+        amount: amount || 200,
+        message: message || '🔊 Test audio from console!',
+        mediaUrl: mediaUrl || ''
+      })
+    }).then(r => r.json()).then(console.log).catch(console.error);
+  };
+
+  console.log('💡 StreamTip config loaded. Use testImageAlert() and testAudioAlert() from console.');
 })();
 </script>
 </body>
