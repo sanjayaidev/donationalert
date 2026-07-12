@@ -8,8 +8,8 @@
 
   // ===== CONFIGURATION =====
   const CONFIG = {
-    streamerName: 'ITS BITTY BOI',
-    streamerDesc: 'BITTY SUPPORT',
+    streamerName: 'CHAMP GAMING',
+    streamerDesc: 'CHAMP SUPPORT',
     currency: { code: 'INR', symbol: '₹' },
     messageTypes: [
       { id: 'text', label: 'TEXT', sublabel: 'Chat message on stream', color: '#22d3ee', minAmount: 1 }
