@@ -316,16 +316,35 @@
   }
   .chip:hover{ border-color:var(--cyan); color:var(--text); }
 
-  /* media dropzone */
+  /* media/audio dropzone */
   .dropzone{
     border:1.5px dashed var(--border2); border-radius:12px; padding:22px 10px;
-    text-align:center; color:var(--text3); font-size:11px;
+    text-align:center; color:var(--text3); font-size:11px; cursor:pointer;
     background:
       repeating-linear-gradient(-45deg, rgba(168,85,247,.05) 0 10px, transparent 10px 20px);
     animation:dashMove 1.2s linear infinite;
+    transition:border-color .15s, background-color .15s;
   }
+  .dropzone:hover, .dropzone:focus-visible{ border-color:var(--violet); color:var(--text2); outline:none; }
+  .dropzone.drag{ border-color:var(--cyan); background-color:rgba(34,211,238,.06); color:var(--text); }
   @keyframes dashMove{ from{background-position:0 0;} to{background-position:28px 0;} }
   .dropzone .ti{ font-size:22px; color:var(--violet); display:block; margin-bottom:6px; }
+
+  .file-preview{
+    display:flex; align-items:center; gap:10px; margin-top:10px; padding:10px;
+    border:1px solid var(--border2); border-radius:12px; background:var(--surface3);
+  }
+  .file-preview img{ width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+  .file-preview-info{ flex:1; min-width:0; }
+  .file-preview-name{ font-size:11.5px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-preview-size{ font-size:9.5px; color:var(--text3); margin-top:2px; }
+  .file-preview-remove{
+    flex-shrink:0; width:26px; height:26px; border-radius:8px; border:1px solid var(--border2);
+    background:var(--surface2); color:var(--text2); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; transition:.15s;
+  }
+  .file-preview-remove:hover{ color:var(--red); border-color:var(--red); }
+  .file-hint{ font-size:9.5px; color:var(--text3); margin-top:2px; }
 
   /* loyalty row */
   .loyalty-row{
@@ -653,17 +672,15 @@
     const accent = activeType ? activeType.color : '#22d3ee';
     document.getElementById('submitBtn').style.setProperty('--card-color', accent);
 
-    // message field vs dropzone for media type
+    // message field vs upload UI — only re-render when the type actually
+    // changes, so typed text / a selected file isn't wiped on every keystroke
     const wrap = document.getElementById('messageFieldWrap');
-    if (activeType && activeType.id === 'media') {
-      wrap.innerHTML = `
-        <div class="field-label">${CFG.labels.messageField}</div>
-        <div class="dropzone"><i class="ti ti-cloud-upload"></i>Drop an image or GIF, or click to upload<br><span style="opacity:.6">png · jpg · gif — wiring pending</span></div>`;
-    } else if (!wrap.querySelector('#messageInput')) {
-      wrap.innerHTML = `
-        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
-        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>`;
-      bindMessageInput();
+    const typeId = activeType ? activeType.id : 'text';
+    if (wrap.dataset.renderedType !== typeId) {
+      renderMessageFieldFor(activeType);
+      wrap.dataset.renderedType = typeId;
+      if (typeId !== 'media') clearMediaFile();
+      if (typeId !== 'audio') clearAudioFile();
     }
 
     // loyalty points
@@ -692,6 +709,124 @@
   }
   bindMessageInput();
 
+  // ===== Media (image/GIF) + Audio file uploads =====
+  let selectedMediaFile = null; // { name, size, dataUrl }
+  let selectedAudioFile = null; // { name, size } — bytes stay in-memory only, not persisted
+
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;   // 2MB — kept small so it's safe to carry in sessionStorage
+  const MAX_AUDIO_BYTES = 8 * 1024 * 1024;   // 8MB
+
+  function escapeHtmlLocal(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderMessageFieldFor(activeType){
+    const wrap = document.getElementById('messageFieldWrap');
+    const id = activeType ? activeType.id : 'text';
+
+    if (id === 'media') {
+      wrap.innerHTML = `
+        <div class="field-label">${CFG.labels.messageField}</div>
+        <input type="file" id="mediaFileInput" accept="image/*" hidden>
+        <div class="dropzone" id="mediaDropzone" tabindex="0" role="button" aria-label="Upload image or GIF">
+          <i class="ti ti-cloud-upload"></i>Click to choose an image or GIF, or drop it here
+          <div class="file-hint">png · jpg · gif — max 2MB</div>
+        </div>
+        <div class="file-preview" id="mediaPreview" style="display:none;"></div>`;
+      bindDropzone('mediaDropzone', 'mediaFileInput', onMediaFileSelected);
+    } else if (id === 'audio') {
+      wrap.innerHTML = `
+        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
+        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>
+        <div class="field-label" style="margin-top:12px;">ATTACH VOICE CLIP (OPTIONAL)</div>
+        <input type="file" id="audioFileInput" accept="audio/*" hidden>
+        <div class="dropzone" id="audioDropzone" tabindex="0" role="button" aria-label="Upload audio clip">
+          <i class="ti ti-microphone"></i>Click to upload a voice clip
+          <div class="file-hint">mp3 · wav · m4a — max 8MB</div>
+        </div>
+        <div class="file-preview" id="audioPreview" style="display:none;"></div>`;
+      bindMessageInput();
+      bindDropzone('audioDropzone', 'audioFileInput', onAudioFileSelected);
+    } else {
+      wrap.innerHTML = `
+        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
+        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>`;
+      bindMessageInput();
+    }
+  }
+
+  function bindDropzone(zoneId, inputId, onSelect){
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    if (!zone || !input) return;
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) onSelect(file);
+    });
+    input.addEventListener('change', () => { if (input.files[0]) onSelect(input.files[0]); });
+  }
+
+  function onMediaFileSelected(file){
+    if (!file.type.startsWith('image/')) { alert('Please choose an image or GIF file'); return; }
+    if (file.size > MAX_IMAGE_BYTES) { alert('Image must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      selectedMediaFile = { name: file.name, size: file.size, dataUrl: reader.result };
+      const preview = document.getElementById('mediaPreview');
+      if (!preview) return;
+      preview.style.display = 'flex';
+      preview.innerHTML = `
+        <img src="${reader.result}" alt="">
+        <div class="file-preview-info">
+          <div class="file-preview-name">${escapeHtmlLocal(file.name)}</div>
+          <div class="file-preview-size">${(file.size/1024).toFixed(0)} KB</div>
+        </div>
+        <button type="button" class="file-preview-remove" id="mediaRemoveBtn"><i class="ti ti-x"></i></button>`;
+      document.getElementById('mediaRemoveBtn').addEventListener('click', clearMediaFile);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function onAudioFileSelected(file){
+    if (!file.type.startsWith('audio/')) { alert('Please choose an audio file'); return; }
+    if (file.size > MAX_AUDIO_BYTES) { alert('Audio clip must be under 8MB'); return; }
+    selectedAudioFile = { name: file.name, size: file.size };
+    const preview = document.getElementById('audioPreview');
+    if (!preview) return;
+    const url = URL.createObjectURL(file);
+    preview.style.display = 'flex';
+    preview.innerHTML = `
+      <div class="file-preview-info" style="flex:1;">
+        <div class="file-preview-name">${escapeHtmlLocal(file.name)}</div>
+        <audio controls src="${url}" style="width:100%;margin-top:6px;"></audio>
+      </div>
+      <button type="button" class="file-preview-remove" id="audioRemoveBtn"><i class="ti ti-x"></i></button>`;
+    document.getElementById('audioRemoveBtn').addEventListener('click', clearAudioFile);
+  }
+
+  function clearMediaFile(){
+    selectedMediaFile = null;
+    const preview = document.getElementById('mediaPreview');
+    const input = document.getElementById('mediaFileInput');
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (input) input.value = '';
+  }
+
+  function clearAudioFile(){
+    selectedAudioFile = null;
+    const preview = document.getElementById('audioPreview');
+    const input = document.getElementById('audioFileInput');
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (input) input.value = '';
+  }
+
   document.getElementById('amountInput').addEventListener('input', updateAll);
 
   document.getElementById('submitBtn').addEventListener('click', () => {
@@ -706,14 +841,31 @@
 
     const activeType = CFG.messageTypes.find(t => t.id === selectedType);
 
-    sessionStorage.setItem('donationData', JSON.stringify({
+    const payload = {
       name, email, amount, message,
       type: selectedType,
       typeLabel: activeType ? activeType.label : '',
       currencySymbol: CFG.currency.symbol,
       currencyCode: CFG.currency.code,
       source: 'popup'
-    }));
+    };
+    if (selectedType === 'media' && selectedMediaFile) {
+      payload.mediaFile = { name: selectedMediaFile.name, size: selectedMediaFile.size, dataUrl: selectedMediaFile.dataUrl };
+    }
+    if (selectedType === 'audio' && selectedAudioFile) {
+      // Only metadata is kept — the audio bytes themselves aren't wired to a
+      // backend upload endpoint yet, so they aren't carried past this page.
+      payload.audioFileName = selectedAudioFile.name;
+      payload.audioFileSize = selectedAudioFile.size;
+    }
+
+    try {
+      sessionStorage.setItem('donationData', JSON.stringify(payload));
+    } catch (e) {
+      // sessionStorage quota exceeded (e.g. large image) — drop the image data URL and retry
+      delete payload.mediaFile;
+      sessionStorage.setItem('donationData', JSON.stringify(payload));
+    }
 
     window.location.href = 'payment.html'; // vercel.json also rewrites /payment → payment.html
   });
