@@ -8,8 +8,8 @@
 
   // ===== CONFIGURATION =====
   const CONFIG = {
-    streamerName: 'ITS BITTY BOI',
-    streamerDesc: 'BITTY SUPPORT',
+    streamerName: 'CHAMP GAMING',
+    streamerDesc: 'Champ Support',
     logoUrl: '/CGLive.png', // Path to logo image in same directory as index.html
     currency: { code: 'INR', symbol: '₹' },
     messageTypes: [
