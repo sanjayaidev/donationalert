@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+<title>Complete Your Support — StreamTip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --bg:#040407; --surface:#09090f; --surface2:#0e0e18; --surface3:#13131f;
+    --border:#1c1c2e; --border2:#252540;
+    --accent:#6c63ff; --accent2:#9b94ff; --accent3:#c8c4ff;
+    --red:#ff3f3f; --green:#22d382;
+    --text:#e8e8f8; --text2:#9090b8; --text3:#5a5a80;
+    --font-mono:'JetBrains Mono',monospace; --font-head:'Syne',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font-mono);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .card{
+    width:100%; max-width:420px; background:var(--surface);
+    border:1px solid var(--border); border-radius:20px; padding:22px;
+    box-shadow:0 32px 64px rgba(0,0,0,.8), 0 0 0 1px rgba(108,99,255,.12);
+  }
+  .card-hdr{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .card-hdr i{ font-size:20px; color:var(--accent2); }
+  .card-hdr h1{ font-family:var(--font-head); font-size:16px; font-weight:800; }
+  .back-link{ margin-left:auto; font-size:11px; color:var(--text3); text-decoration:none; }
+  .back-link:hover{ color:var(--text2); }
+
+  /* Steps */
+  .step-row{ display:flex; align-items:center; gap:6px; margin-bottom:18px; }
+  .sp{
+    width:26px; height:26px; border-radius:50%; background:var(--surface3);
+    border:1px solid var(--border2); display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:var(--text3); flex-shrink:0; transition:.2s;
+  }
+  .sp.done{ background:var(--accent); border-color:var(--accent2); color:#fff; }
+  .sp.cur{ background:var(--accent); border-color:var(--accent3); color:#fff; box-shadow:0 0 0 4px rgba(108,99,255,.2); }
+  .sl{ flex:1; height:1px; background:var(--border); transition:.3s; }
+  .sl.done{ background:var(--accent); }
+
+  .step-panel{ display:none; }
+  .step-panel.vis{ display:block; animation:fadeIn .2s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .fld{ margin-bottom:12px; }
+  .fld-label{ font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text3); margin-bottom:5px; display:block; }
+  .fld input{
+    width:100%; background:var(--surface3); border:1px solid var(--border2); border-radius:9px;
+    padding:9px 12px; font-size:12px; color:var(--text); font-family:var(--font-mono); outline:none; transition:.15s;
+  }
+  .fld input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,99,255,.12); }
+  .fld input::placeholder{ color:var(--text3); }
+
+  .review-box{ background:var(--surface3); border:1px solid var(--border2); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .rv-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .rv-row:last-child{ border-bottom:none; }
+  .rv-row span:first-child{ color:var(--text3); }
+  .rv-row span:last-child{ color:var(--text); font-weight:600; text-align:right; max-width:60%; }
+
+  .btn{
+    width:100%; border:none; border-radius:10px; padding:12px 0; font-size:12.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-top:10px; cursor:pointer;
+    font-family:var(--font-mono); transition:.15s;
+  }
+  .btn-primary{ background:linear-gradient(135deg,var(--accent),#9b60ff); color:#fff; box-shadow:0 4px 16px rgba(108,99,255,.35); }
+  .btn-primary:hover{ filter:brightness(1.1); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border:1px solid var(--border2); color:var(--text3); }
+  .btn-ghost:hover{ border-color:var(--text3); color:var(--text2); }
+
+  .pay-gate{ background:var(--surface3); border:1px solid var(--border2); border-radius:12px; padding:16px; text-align:center; margin-bottom:4px; }
+  .pay-title{ font-family:var(--font-head); font-size:15px; font-weight:700; margin-bottom:4px; }
+  .pay-amt{ font-size:26px; font-weight:700; color:var(--accent2); margin:4px 0 10px; }
+  .pay-methods{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .pm{ font-size:9px; font-weight:700; background:var(--surface); border:1px solid var(--border); padding:3px 10px; border-radius:999px; color:var(--text3); letter-spacing:.04em; }
+  .secure-badge{ display:flex; align-items:center; justify-content:center; gap:5px; font-size:9px; color:var(--text3); margin-top:10px; }
+  .secure-badge i{ color:var(--green); font-size:11px; }
+
+  select.fld-select{
+    width:100%; background:var(--surface3); border:1px solid var(--border2); border-radius:9px;
+    padding:9px 12px; color:var(--text); font-size:12px; font-family:var(--font-mono); outline:none; transition:.15s;
+  }
+  select.fld-select:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,99,255,.12); }
+
+  .spin{
+    width:14px; height:14px; border:2px solid rgba(255,255,255,.25); border-top-color:#fff;
+    border-radius:50%; animation:rot .6s linear infinite; display:none;
+  }
+  @keyframes rot{ to{ transform:rotate(360deg); } }
+
+  .empty-state{ text-align:center; padding:20px 0; }
+  .empty-state i{ font-size:32px; color:var(--text3); margin-bottom:10px; display:block; }
+  .empty-state p{ font-size:12px; color:var(--text2); margin-bottom:14px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-hdr">
+    <i class="ti ti-heart"></i>
+    <h1>Complete Your Support</h1>
+    <a class="back-link" href="donate-popup.html">← Back</a>
+  </div>
+
+  <!-- Shown only if there's no pending donation in this session -->
+  <div class="step-panel vis" id="empty-panel" style="display:none;">
+    <div class="empty-state">
+      <i class="ti ti-mood-empty"></i>
+      <p>We couldn't find a pending support request.<br>Please start again from the donate page.</p>
+      <a class="btn btn-primary" href="donate-popup.html" style="text-decoration:none;">Go to Donate Page</a>
+    </div>
+  </div>
+
+  <div id="flow" style="display:none;">
+    <div class="step-row">
+      <div class="sp cur" id="sp1">1</div><div class="sl" id="sl1"></div>
+      <div class="sp" id="sp2">2</div>
+    </div>
+
+    <!-- Step 1: Review -->
+    <div class="step-panel vis" id="step1">
+      <div class="review-box">
+        <div class="rv-row"><span>Name</span><span id="r-name">—</span></div>
+        <div class="rv-row"><span>Type</span><span id="r-type">—</span></div>
+        <div class="rv-row"><span>Amount</span><span id="r-amt" style="color:var(--accent2);font-size:14px">—</span></div>
+        <div class="rv-row"><span>Message</span><span id="r-msg">—</span></div>
+      </div>
+      <div class="fld">
+        <label class="fld-label">Email (for receipt)</label>
+        <input type="email" id="r-email-input" placeholder="you@example.com">
+      </div>
+      <button class="btn btn-primary" onclick="goStep(2)"><i class="ti ti-lock"></i> Proceed to Payment</button>
+    </div>
+
+    <!-- Step 2: Payment method -->
+    <div class="step-panel" id="step2">
+      <div class="fld">
+        <label class="fld-label">Select Payment Method</label>
+        <select id="payment-method" class="fld-select" onchange="updatePaymentUI()">
+          <option value="cashfree">Cashfree</option>
+          <option value="razorpay">Razorpay</option>
+          <option value="paypal">PayPal</option>
+          <option value="stripe">Stripe</option>
+        </select>
+      </div>
+      <div class="pay-gate">
+        <div class="pay-title" id="pay-provider-title">Cashfree Secure Payment</div>
+        <div class="pay-amt" id="pay-amt">₹0</div>
+        <div class="pay-methods" id="pay-methods-display">
+          <span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>
+        </div>
+        <div class="secure-badge"><i class="ti ti-shield-check"></i> 256-bit SSL encrypted</div>
+      </div>
+      <button class="btn btn-primary" id="pay-btn" onclick="doPay()">
+        <span id="pay-txt">Pay Now</span>
+        <div class="spin" id="pay-spin"></div>
+      </button>
+      <button class="btn btn-ghost" onclick="goStep(1)">← Back to review</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let state = null;
+  let curStep = 1;
+
+  function init(){
+    let raw = null;
+    try { raw = sessionStorage.getItem('donationData'); } catch(e){}
+    if (!raw) {
+      document.getElementById('empty-panel').style.display = 'block';
+      return;
+    }
+    try { state = JSON.parse(raw); } catch(e){ state = null; }
+    if (!state || !state.name || !state.amount) {
+      document.getElementById('empty-panel').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('flow').style.display = 'block';
+
+    const symbol = state.currencySymbol || '₹';
+    document.getElementById('r-name').textContent = state.name;
+    document.getElementById('r-type').textContent = state.typeLabel || state.type || '—';
+    document.getElementById('r-amt').textContent   = symbol + Math.round(state.amount);
+    document.getElementById('r-msg').textContent   = state.message || '(no message)';
+    document.getElementById('r-email-input').value = state.email || '';
+    document.getElementById('pay-amt').textContent = symbol + Math.round(state.amount);
+  }
+
+  window.goStep = function(n){
+    if (n === 2) {
+      const email = document.getElementById('r-email-input').value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Enter a valid email'); return; }
+      state.email = email;
+      try { sessionStorage.setItem('donationData', JSON.stringify(state)); } catch(e){}
+      updatePaymentUI();
+    }
+    curStep = n;
+    for (let i = 1; i <= 2; i++) {
+      document.getElementById('step' + i).classList.toggle('vis', i === n);
+      const pip = document.getElementById('sp' + i);
+      pip.className = 'sp' + (i < n ? ' done' : i === n ? ' cur' : '');
+      pip.innerHTML = i < n ? '✓' : i;
+      if (i < 2) document.getElementById('sl' + i).className = 'sl' + (i < n ? ' done' : '');
+    }
+  };
+
+  window.updatePaymentUI = function(){
+    const provider = document.getElementById('payment-method').value;
+    const titleEl = document.getElementById('pay-provider-title');
+    const methodsEl = document.getElementById('pay-methods-display');
+    if (provider === 'razorpay') {
+      titleEl.textContent = 'Razorpay Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>';
+    } else if (provider === 'paypal') {
+      titleEl.textContent = 'PayPal Payment';
+      methodsEl.innerHTML = '<span class="pm">PayPal Account</span><span class="pm">Credit Card</span><span class="pm">Debit Card</span>';
+    } else if (provider === 'stripe') {
+      titleEl.textContent = 'Stripe Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">Cards</span><span class="pm">Apple Pay</span><span class="pm">Google Pay</span>';
+    } else {
+      titleEl.textContent = 'Cashfree Secure Payment';
+      methodsEl.innerHTML = '<span class="pm">UPI</span><span class="pm">Cards</span><span class="pm">NetBanking</span><span class="pm">Wallets</span>';
+    }
+  };
+
+  window.doPay = async function(){
+    const btn  = document.getElementById('pay-btn');
+    const txt  = document.getElementById('pay-txt');
+    const spin = document.getElementById('pay-spin');
+    const provider = document.getElementById('payment-method').value;
+
+    btn.disabled = true;
+    txt.textContent = 'Processing…';
+    spin.style.display = 'block';
+
+    try {
+      if (provider === 'razorpay')      await handleRazorpay();
+      else if (provider === 'paypal')   await handlePaypal();
+      else if (provider === 'stripe')   await handleStripe();
+      else                              await handleCashfree();
+    } catch (err) {
+      console.error(err);
+      alert('Error: ' + err.message);
+    } finally {
+      spin.style.display = 'none';
+      btn.disabled = false;
+      txt.textContent = 'Pay Now';
+    }
+  };
+
+  // message sent to the API is prefixed with the chosen support type so it's
+  // still visible on-stream even though the API itself has no "type" column
+  function outgoingMessage(){
+    if (state.type && state.type !== 'text' && state.typeLabel) {
+      return `[${state.typeLabel}] ${state.message || ''}`.trim();
+    }
+    return state.message || '';
+  }
+
+  async function handleCashfree(){
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name, email: state.email, amount: state.amount, message: outgoingMessage() })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.payment_session_id) {
+      alert('Error: ' + (data.error || data.cf_response?.message || 'No session ID returned'));
+      return;
+    }
+    const cfMode = data.mode && data.mode.mode === 'TEST' ? 'sandbox' : 'production';
+    const cashfree = Cashfree({ mode: cfMode });
+    await cashfree.checkout({
+      paymentSessionId: data.payment_session_id,
+      returnUrl: `${window.location.origin}/thankyou?order_id=${data.order_id}`,
+    });
+  }
+
+  async function handleRazorpay(){
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name, email: state.email, amount: state.amount, message: outgoingMessage(), provider: 'razorpay' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.razorpay_order_id) {
+      alert('Error: ' + (data.error || 'Failed to create Razorpay order'));
+      return;
+    }
+    const options = {
+      key: data.razorpay_key_id,
+      amount: Math.round(state.amount * 100),
+      currency: 'INR',
+      name: 'StreamTip',
+      description: 'Tip for streamer',
+      order_id: data.razorpay_order_id,
+      handler: function(response){
+        window.location.href = `/thankyou?order_id=${data.order_id}&provider=razorpay&payment_id=${response.razorpay_payment_id}&razorpay_order_id=${data.razorpay_order_id}&razorpay_signature=${response.razorpay_signature}`;
+      },
+      prefill: { name: state.name, email: state.email },
+      theme: { color: '#6c63ff' }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+  }
+
+  async function handlePaypal(){
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name, email: state.email, amount: state.amount, message: outgoingMessage(), provider: 'paypal' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.paypal_approval_url) {
+      alert('Error: ' + (data.error || 'Failed to create PayPal payment'));
+      return;
+    }
+    window.location.href = data.paypal_approval_url;
+  }
+
+  async function handleStripe(){
+    const res = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name, email: state.email, amount: state.amount, message: outgoingMessage(), provider: 'stripe' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.stripe_checkout_url) {
+      alert('Error: ' + (data.error || 'Failed to create Stripe checkout session'));
+      return;
+    }
+    window.location.href = data.stripe_checkout_url;
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
