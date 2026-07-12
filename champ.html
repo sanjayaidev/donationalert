@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Champ Support — CHAMP GAMING</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --bg:#050507; --surface:#0a0a11; --surface2:#0f0f18; --surface3:#151521;
+    --border:#1c1c2a; --border2:#25253a;
+    --text:#eef0fb; --text2:#8c8caa; --text3:#4d4d66;
+    --cyan:#22d3ee; --amber:#ffb020; --violet:#a855f7; --red:#ff3f66;
+    --font-head:'Syne',sans-serif; --font-mono:'JetBrains Mono',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font-mono);
+    overflow-x:hidden;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(108,99,255,.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 10%, rgba(34,211,238,.08), transparent 60%),
+      var(--bg);
+  }
+
+  /* ===== MODAL ===== */
+  .modal{
+    position:relative;
+    width:100%; max-width:420px; max-height:92vh; overflow-y:auto;
+    background:linear-gradient(180deg,var(--surface),var(--surface2) 60%);
+    border-radius:22px; border:1px solid var(--border2);
+    padding:2px;
+  }
+  .modal::-webkit-scrollbar{width:6px;}
+  .modal::-webkit-scrollbar-thumb{background:var(--border2); border-radius:6px;}
+
+  /* rotating gradient edge-light around modal */
+  .modal-glow{
+    position:absolute; inset:-2px; border-radius:24px; z-index:-1;
+    background:conic-gradient(from 0deg, var(--cyan), var(--violet), var(--amber), var(--cyan));
+    filter:blur(14px); opacity:.35;
+    animation:spin 8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .modal-inner{ position:relative; padding:22px; border-radius:20px; background:var(--surface); }
+
+  /* header */
+  .stream-head{ display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+  .avatar-wrap{ position:relative; width:56px; height:56px; flex-shrink:0; }
+  .avatar-ring{
+    position:absolute; inset:-3px; border-radius:50%;
+    background:conic-gradient(var(--cyan),var(--violet),var(--amber),var(--cyan));
+    animation:spin 5s linear infinite;
+  }
+  .avatar{
+    position:absolute; inset:2px; border-radius:50%; background:var(--surface3);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-weight:800; font-size:18px; color:var(--text);
+    overflow:hidden;
+  }
+  .avatar img{ width:100%; height:100%; object-fit:cover; }
+  .stream-name{ font-family:var(--font-head); font-weight:800; font-size:19px; letter-spacing:-.02em; line-height:1.15; }
+  .stream-desc{
+    display:inline-flex; align-items:center; gap:5px; margin-top:5px;
+    font-size:10px; letter-spacing:.06em; color:var(--cyan);
+    background:rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.28);
+    padding:3px 9px; border-radius:999px; font-weight:600;
+  }
+  .live-pill{
+    margin-left:auto; display:flex; align-items:center; gap:6px;
+    background:rgba(255,63,102,.1); border:1px solid var(--red); color:#ff9db0;
+    padding:5px 11px; border-radius:999px; font-size:10px; font-weight:700; letter-spacing:.06em;
+  }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:var(--red); box-shadow:0 0 6px var(--red); animation:blink 1.4s ease-in-out infinite; }
+  @keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.25;} }
+
+  /* field group */
+  .field{ margin-bottom:18px; }
+  .field-label{
+    font-size:10px; font-weight:700; letter-spacing:.09em; color:var(--text3);
+    margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .text-input, .textarea{
+    width:100%; background:var(--surface3); border:1px solid var(--border2); border-radius:11px;
+    padding:12px 14px; color:var(--text); font-family:var(--font-mono); font-size:13px;
+    outline:none; transition:.15s;
+  }
+  .text-input:focus, .textarea:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(34,211,238,.12); }
+  .textarea{ resize:none; min-height:70px; line-height:1.5; }
+
+  /* type cards */
+  @property --border-angle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  @keyframes sweepBoundary{ to{ --border-angle:360deg; } }
+  @keyframes cardTint{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.12); } }
+
+  .type-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+  .type-card{
+    position:relative; z-index:0; border-radius:14px; padding:2px; cursor:pointer;
+    background:var(--surface3);
+    transition:transform .18s ease;
+  }
+  .type-card:active{ transform:scale(.97); }
+
+  /* always-on animated boundary: a conic gradient whose ANGLE is animated via a
+     custom property, so the bright segment travels around the edge — nothing on
+     the card is transformed/rotated, only the gradient's start-angle changes */
+  .type-card::before{
+    content:""; position:absolute; inset:-2px; border-radius:16px; z-index:-1;
+    background:conic-gradient(from var(--border-angle),
+      var(--card-color) 0deg, transparent 50deg, transparent 130deg,
+      var(--card-color) 180deg, transparent 230deg, transparent 310deg, var(--card-color) 360deg);
+    animation:sweepBoundary 3.6s linear infinite;
+    opacity:.55;
+  }
+  .type-card-inner{
+    position:relative; border-radius:13px; padding:13px 8px 11px;
+    display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--card-color) 14%, var(--surface3)), var(--surface3) 70%);
+    transition:.18s;
+  }
+  .type-card .ti{ font-size:19px; color:var(--card-color); opacity:.75; transition:.18s; }
+  .type-label{ font-size:10.5px; font-weight:800; letter-spacing:.05em; color:var(--text); opacity:.85; }
+  .type-sub{ font-size:8.5px; color:var(--text3); letter-spacing:.02em; }
+  .type-threshold{ font-size:8.5px; font-weight:700; margin-top:1px; }
+
+  .type-card.locked{ cursor:not-allowed; }
+  .type-card.locked::before{ opacity:.15; animation-play-state:paused; }
+  .type-card.locked .type-card-inner{ background:var(--surface3); }
+  .type-card.locked .ti, .type-card.locked .type-label{ opacity:.35; }
+
+  .type-card.unlocked::before{ opacity:.7; }
+  .type-card.unlocked .ti, .type-card.unlocked .type-label{ opacity:1; }
+
+  .type-card.selected{ box-shadow:0 0 22px -6px var(--card-color); }
+  .type-card.selected::before{ opacity:1; animation-duration:1.8s; }
+  .type-card.selected .type-card-inner{
+    background:linear-gradient(160deg, color-mix(in srgb, var(--card-color) 26%, var(--surface2)), var(--surface2) 70%);
+    animation:cardTint 2s ease-in-out infinite;
+  }
+  .type-card.unlocked:not(.selected):hover::before{ opacity:.9; }
+
+  /* unlock meter */
+  .meter-wrap{ margin-top:10px; }
+  .meter-track{
+    position:relative; height:7px; border-radius:99px; background:var(--surface3);
+    border:1px solid var(--border2); overflow:hidden;
+  }
+  .meter-fill{
+    position:absolute; inset:0 auto 0 0; width:0%; border-radius:99px;
+    background:linear-gradient(90deg,var(--cyan),var(--amber),var(--violet));
+    transition:width .5s cubic-bezier(.3,.8,.3,1);
+    box-shadow:0 0 12px rgba(168,85,247,.5);
+  }
+  .meter-ticks{ display:flex; justify-content:space-between; margin-top:6px; }
+  .meter-tick{ font-size:8.5px; color:var(--text3); font-weight:600; transition:.2s; }
+  .meter-tick.reached{ color:var(--text); }
+
+  /* amount row */
+  .amount-row{ display:flex; gap:8px; }
+  .currency-box{
+    flex-shrink:0; width:66px; display:flex; align-items:center; justify-content:center;
+    background:var(--surface3); border:1px solid var(--border2); border-radius:11px;
+    font-size:13px; font-weight:700; color:var(--text2);
+  }
+  .chips{ display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
+  .chip{
+    padding:6px 12px; border-radius:999px; font-size:11px; font-weight:600;
+    background:var(--surface3); border:1px solid var(--border2); color:var(--text2);
+    cursor:pointer; transition:.15s;
+  }
+  .chip:hover{ border-color:var(--cyan); color:var(--text); }
+
+  /* media/audio dropzone */
+  .dropzone{
+    border:1.5px dashed var(--border2); border-radius:12px; padding:22px 10px;
+    text-align:center; color:var(--text3); font-size:11px; cursor:pointer;
+    background:
+      repeating-linear-gradient(-45deg, rgba(168,85,247,.05) 0 10px, transparent 10px 20px);
+    animation:dashMove 1.2s linear infinite;
+    transition:border-color .15s, background-color .15s;
+  }
+  .dropzone:hover, .dropzone:focus-visible{ border-color:var(--violet); color:var(--text2); outline:none; }
+  .dropzone.drag{ border-color:var(--cyan); background-color:rgba(34,211,238,.06); color:var(--text); }
+  @keyframes dashMove{ from{background-position:0 0;} to{background-position:28px 0;} }
+  .dropzone .ti{ font-size:22px; color:var(--violet); display:block; margin-bottom:6px; }
+
+  .file-preview{
+    display:flex; align-items:center; gap:10px; margin-top:10px; padding:10px;
+    border:1px solid var(--border2); border-radius:12px; background:var(--surface3);
+  }
+  .file-preview img{ width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+  .file-preview-info{ flex:1; min-width:0; }
+  .file-preview-name{ font-size:11.5px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .file-preview-size{ font-size:9.5px; color:var(--text3); margin-top:2px; }
+  .file-preview-remove{
+    flex-shrink:0; width:26px; height:26px; border-radius:8px; border:1px solid var(--border2);
+    background:var(--surface2); color:var(--text2); cursor:pointer; display:flex;
+    align-items:center; justify-content:center; transition:.15s;
+  }
+  .file-preview-remove:hover{ color:var(--red); border-color:var(--red); }
+  .file-hint{ font-size:9.5px; color:var(--text3); margin-top:2px; }
+
+  /* loyalty row */
+  .loyalty-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin:6px 0 18px; padding:11px 13px; border-radius:12px;
+    background:linear-gradient(90deg, rgba(255,176,32,.08), transparent);
+    border:1px solid rgba(255,176,32,.22);
+  }
+  .loyalty-left{ display:flex; align-items:center; gap:8px; font-size:11.5px; color:#ffcf7a; font-weight:600; }
+  .loyalty-pts{ font-size:13px; font-weight:800; color:var(--amber); text-shadow:0 0 12px rgba(255,176,32,.5); }
+
+  /* submit button with trigger button animation */
+  .submit-btn{
+    width:100%; border:none; border-radius:13px; padding:15px; cursor:pointer;
+    font-family:var(--font-mono); font-weight:800; font-size:14px; letter-spacing:.03em;
+    color:#04070a; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:linear-gradient(100deg,var(--card-color,var(--cyan)),var(--violet) 45%,var(--amber) 85%);
+    background-size:220% 100%;
+    box-shadow:0 8px 30px rgba(168,85,247,.35), 0 0 0 1px rgba(255,255,255,.08) inset;
+    animation:triggerPulse 2.6s ease-in-out infinite, sheenSlide 3.4s linear infinite;
+  }
+  @keyframes triggerPulse{
+    0%,100%{ box-shadow:0 8px 30px rgba(168,85,247,.35), 0 0 0 1px rgba(255,255,255,.08) inset; }
+    50%{ box-shadow:0 8px 44px rgba(34,211,238,.55), 0 0 0 1px rgba(255,255,255,.12) inset; }
+  }
+  @keyframes sheenSlide{ 0%{ background-position:0% 50%; } 100%{ background-position:200% 50%; } }
+  .submit-btn:disabled{ opacity:.4; cursor:not-allowed; animation-play-state:paused; box-shadow:none; }
+  .submit-btn:not(:disabled):hover{ filter:brightness(1.08); }
+
+  .footer-note{ text-align:center; font-size:9.5px; color:var(--text3); margin-top:16px; line-height:1.6; }
+  .footer-note a{ color:var(--text2); }
+
+  @media (prefers-reduced-motion:reduce){
+    .modal-glow, .avatar-ring, .type-card::before, .type-card.selected .type-card-inner,
+    .submit-btn, .dropzone{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="modal">
+    <div class="modal-glow"></div>
+    <div class="modal-inner">
+
+      <div class="stream-head">
+        <div class="avatar-wrap">
+          <div class="avatar-ring"></div>
+          <div class="avatar" id="avatar">C</div>
+        </div>
+        <div>
+          <div class="stream-name" id="streamerName">CHAMP GAMING</div>
+          <div class="stream-desc" id="streamerDesc">CHAMP SUPPORT</div>
+        </div>
+        <div class="live-pill" id="livePill"><span class="live-dot"></span>LIVE</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label" id="nameFieldLabel">YOUR NAME</div>
+        <input class="text-input" id="donorName" placeholder="Enter your name">
+      </div>
+
+      <div class="field">
+        <div class="field-label">EMAIL</div>
+        <input class="text-input" id="donorEmail" type="email" placeholder="you@example.com">
+      </div>
+
+      <div class="field">
+        <div class="field-label" id="typeFieldLabel">MESSAGE TYPE</div>
+        <div class="type-grid" id="typeGrid"></div>
+        <div class="meter-wrap">
+          <div class="meter-track"><div class="meter-fill" id="meterFill"></div></div>
+          <div class="meter-ticks" id="meterTicks"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label" id="amountFieldLabel">AMOUNT</div>
+        <div class="amount-row">
+          <div class="currency-box" id="currencyBox">₹ INR</div>
+          <input class="text-input" id="amountInput" type="number" min="1" placeholder="0" style="flex:1;">
+        </div>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="field" id="messageFieldWrap">
+        <div class="field-label">
+          <span id="messageFieldLabel">MESSAGE</span>
+          <span id="msgCounter">0/70</span>
+        </div>
+        <textarea class="textarea" id="messageInput" placeholder="Your message (optional)"></textarea>
+      </div>
+
+      <div class="loyalty-row">
+        <div class="loyalty-left"><i class="ti ti-gift"></i> <span id="loyaltyLabel">Earn Reward Points</span></div>
+        <div class="loyalty-pts" id="loyaltyPts">+0 pts</div>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" disabled><i class="ti ti-heart"></i> <span id="submitLabel">SUPPORT ₹0</span></button>
+
+      <div class="footer-note">
+        Phone numbers collected as per applicable payment regulations.<br>
+        This is a UI preview — payment is not yet wired up.
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const ICONS = { text:'ti-message-circle', audio:'ti-microphone', media:'ti-photo', sound:'ti-volume' };
+
+  const FALLBACK_CONFIG = {
+    streamer:{ name:"CHAMP GAMING", description:"CHAMP SUPPORT", avatarUrl:"./CGLive.png", status:"LIVE", showStatus:true },
+    currency:{ code:"INR", symbol:"₹" },
+    messageTypes:[
+      { id:"text",  label:"TEXT",       sublabel:"Chat message on stream", icon:"message-circle", color:"#22d3ee", minAmount:1,   loyaltyPointsPer100:5 },
+      { id:"audio", label:"AUDIO",      sublabel:"Read aloud (TTS)",       icon:"mic",             color:"#ffb020", minAmount:200, loyaltyPointsPer100:8 },
+      { id:"media", label:"IMAGE / GIF",sublabel:"Shown on overlay",       icon:"image",            color:"#a855f7", minAmount:300, loyaltyPointsPer100:12 }
+    ],
+    buttons:{ support:"SUPPORT", locked:"LOCKED", creatorSignup:"Sign Up as a Creator" },
+    labels:{
+      nameField:"YOUR NAME", namePlaceholder:"Enter your name", typeField:"MESSAGE TYPE",
+      amountField:"AMOUNT", messageField:"MESSAGE", messagePlaceholder:"Your message (optional)",
+      unlockHint:"Unlocks at {amount}", loyaltyLabel:"Earn Reward Points",
+      loyaltyEarnedPrefix:"+", loyaltyEarnedSuffix:" pts"
+    },
+    loyalty:{ enabled:true, tiers:[
+      { name:"Bronze Supporter", minAmount:1,    multiplier:1 },
+      { name:"Silver Supporter", minAmount:200,  multiplier:1.25 },
+      { name:"Gold Supporter",   minAmount:500,  multiplier:1.5 },
+      { name:"Champ Legend",     minAmount:1000, multiplier:2 }
+    ]},
+    messageMaxLength:70
+  };
+
+  let CFG = null;
+  let selectedType = null;
+
+  fetch('./donate-config.json').then(r=>{ if(!r.ok) throw 0; return r.json(); })
+    .then(cfg => init(cfg))
+    .catch(() => init(FALLBACK_CONFIG));
+
+  function iconFor(t){ return ICONS[t.icon] || ICONS[t.id] || 'ti-star'; }
+
+  function init(cfg){
+    CFG = cfg;
+    document.getElementById('streamerName').textContent = cfg.streamer.name;
+    document.getElementById('streamerDesc').textContent = cfg.streamer.description;
+    document.getElementById('avatar').textContent = (cfg.streamer.name||'?').trim().charAt(0).toUpperCase();
+    if(cfg.streamer.avatarUrl){ document.getElementById('avatar').innerHTML = `<img src="${cfg.streamer.avatarUrl}" alt="">`; }
+    document.getElementById('livePill').style.display = cfg.streamer.showStatus === false ? 'none' : 'flex';
+    document.getElementById('livePill').lastChild.textContent = cfg.streamer.status || 'LIVE';
+
+    document.getElementById('nameFieldLabel').textContent = cfg.labels.nameField;
+    document.getElementById('donorName').placeholder = cfg.labels.namePlaceholder;
+    document.getElementById('typeFieldLabel').textContent = cfg.labels.typeField;
+    document.getElementById('amountFieldLabel').textContent = cfg.labels.amountField;
+    document.getElementById('messageFieldLabel').textContent = cfg.labels.messageField;
+    document.getElementById('messageInput').placeholder = cfg.labels.messagePlaceholder;
+    document.getElementById('loyaltyLabel').textContent = cfg.labels.loyaltyLabel;
+    document.getElementById('currencyBox').textContent = `${cfg.currency.symbol} ${cfg.currency.code}`;
+    document.getElementById('msgCounter').textContent = `0/${cfg.messageMaxLength}`;
+    document.getElementById('messageInput').maxLength = cfg.messageMaxLength;
+
+    renderTypeCards();
+    renderMeterTicks();
+    renderChips();
+    selectedType = cfg.messageTypes[0].id;
+    updateAll();
+  }
+
+  function renderTypeCards(){
+    const grid = document.getElementById('typeGrid');
+    grid.innerHTML = '';
+    CFG.messageTypes.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'type-card';
+      card.dataset.id = t.id;
+      card.style.setProperty('--card-color', t.color);
+      card.innerHTML = `
+        <div class="type-card-inner">
+          <i class="ti ${iconFor(t)}"></i>
+          <div class="type-label">${t.label}</div>
+          <div class="type-sub">${t.sublabel || ''}</div>
+          <div class="type-threshold"></div>
+        </div>`;
+      card.addEventListener('click', () => {
+        const amt = parseFloat(document.getElementById('amountInput').value) || 0;
+        if (amt < t.minAmount) return;
+        selectedType = t.id;
+        updateAll();
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderMeterTicks(){
+    const wrap = document.getElementById('meterTicks');
+    wrap.innerHTML = '';
+    CFG.messageTypes.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'meter-tick';
+      el.dataset.min = t.minAmount;
+      el.textContent = `${CFG.currency.symbol}${t.minAmount}+ ${t.label}`;
+      wrap.appendChild(el);
+    });
+  }
+
+  function renderChips(){
+    const wrap = document.getElementById('chips');
+    const maxT = Math.max(...CFG.messageTypes.map(t=>t.minAmount));
+    const suggestions = [...new Set([...CFG.messageTypes.map(t=>t.minAmount), maxT*2])].sort((a,b)=>a-b).slice(0,5);
+    wrap.innerHTML = '';
+    suggestions.forEach(v => {
+      const c = document.createElement('div');
+      c.className = 'chip';
+      c.textContent = `${CFG.currency.symbol}${v}`;
+      c.addEventListener('click', () => {
+        document.getElementById('amountInput').value = v;
+        updateAll();
+      });
+      wrap.appendChild(c);
+    });
+  }
+
+  function currentTier(amount){
+    if (!CFG.loyalty.enabled) return { multiplier:1 };
+    let tier = CFG.loyalty.tiers[0];
+    CFG.loyalty.tiers.forEach(t => { if (amount >= t.minAmount) tier = t; });
+    return tier;
+  }
+
+  function updateAll(){
+    const amount = parseFloat(document.getElementById('amountInput').value) || 0;
+    const maxMin = Math.max(...CFG.messageTypes.map(t=>t.minAmount));
+    const pct = Math.min(100, (amount / maxMin) * 100);
+    document.getElementById('meterFill').style.width = pct + '%';
+
+    document.querySelectorAll('.meter-tick').forEach(el => {
+      el.classList.toggle('reached', amount >= parseFloat(el.dataset.min));
+    });
+
+    let anyUnlockedSelected = false;
+    document.querySelectorAll('.type-card').forEach(card => {
+      const t = CFG.messageTypes.find(x => x.id === card.dataset.id);
+      const unlocked = amount >= t.minAmount;
+      card.classList.toggle('locked', !unlocked);
+      card.classList.toggle('unlocked', unlocked);
+      const isSel = unlocked && selectedType === t.id;
+      card.classList.toggle('selected', isSel);
+      if (isSel) anyUnlockedSelected = true;
+      const thEl = card.querySelector('.type-threshold');
+      thEl.textContent = unlocked ? '✓ unlocked' : (CFG.labels.unlockHint || 'Unlocks at {amount}').replace('{amount}', CFG.currency.symbol + t.minAmount);
+      thEl.style.color = unlocked ? t.color : 'var(--text3)';
+    });
+
+    if (!anyUnlockedSelected) {
+      const unlockedTypes = CFG.messageTypes.filter(t => amount >= t.minAmount);
+      selectedType = unlockedTypes.length ? unlockedTypes[unlockedTypes.length - 1].id : null;
+      document.querySelectorAll('.type-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.id === selectedType);
+      });
+    }
+
+    const activeType = CFG.messageTypes.find(t => t.id === selectedType);
+    const accent = activeType ? activeType.color : '#22d3ee';
+    document.getElementById('submitBtn').style.setProperty('--card-color', accent);
+
+    // message field vs upload UI — only re-render when the type actually
+    // changes, so typed text / a selected file isn't wiped on every keystroke
+    const wrap = document.getElementById('messageFieldWrap');
+    const typeId = activeType ? activeType.id : 'text';
+    if (wrap.dataset.renderedType !== typeId) {
+      renderMessageFieldFor(activeType);
+      wrap.dataset.renderedType = typeId;
+      if (typeId !== 'media') clearMediaFile();
+      if (typeId !== 'audio') clearAudioFile();
+    }
+
+    // loyalty points
+    const tier = currentTier(amount);
+    let points = 0;
+    if (CFG.loyalty.enabled && activeType && amount > 0) {
+      points = Math.round((amount / 100) * activeType.loyaltyPointsPer100 * tier.multiplier);
+    }
+    document.getElementById('loyaltyPts').textContent = `${CFG.labels.loyaltyEarnedPrefix}${points}${CFG.labels.loyaltyEarnedSuffix}`;
+
+    // submit button
+    const btn = document.getElementById('submitBtn');
+    const canSubmit = amount > 0 && !!activeType;
+    btn.disabled = !canSubmit;
+    document.getElementById('submitLabel').textContent =
+      canSubmit ? `${CFG.buttons.support} ${CFG.currency.symbol}${amount}` : `${CFG.buttons.support} ${CFG.currency.symbol}0`;
+  }
+
+  function bindMessageInput(){
+    const input = document.getElementById('messageInput');
+    if (!input) return;
+    input.addEventListener('input', () => {
+      const counter = document.getElementById('msgCounter');
+      if (counter) counter.textContent = `${input.value.length}/${CFG.messageMaxLength}`;
+    });
+  }
+  bindMessageInput();
+
+  // ===== Media (image/GIF) + Audio file uploads =====
+  let selectedMediaFile = null; // { name, size, dataUrl }
+  let selectedAudioFile = null; // { name, size } — bytes stay in-memory only, not persisted
+
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024;   // 2MB — kept small so it's safe to carry in sessionStorage
+  const MAX_AUDIO_BYTES = 8 * 1024 * 1024;   // 8MB
+
+  function escapeHtmlLocal(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderMessageFieldFor(activeType){
+    const wrap = document.getElementById('messageFieldWrap');
+    const id = activeType ? activeType.id : 'text';
+
+    if (id === 'media') {
+      wrap.innerHTML = `
+        <div class="field-label">${CFG.labels.messageField}</div>
+        <input type="file" id="mediaFileInput" accept="image/*" hidden>
+        <div class="dropzone" id="mediaDropzone" tabindex="0" role="button" aria-label="Upload image or GIF">
+          <i class="ti ti-cloud-upload"></i>Click to choose an image or GIF, or drop it here
+          <div class="file-hint">png · jpg · gif — max 2MB</div>
+        </div>
+        <div class="file-preview" id="mediaPreview" style="display:none;"></div>`;
+      bindDropzone('mediaDropzone', 'mediaFileInput', onMediaFileSelected);
+    } else if (id === 'audio') {
+      wrap.innerHTML = `
+        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
+        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>
+        <div class="field-label" style="margin-top:12px;">ATTACH VOICE CLIP (OPTIONAL)</div>
+        <input type="file" id="audioFileInput" accept="audio/*" hidden>
+        <div class="dropzone" id="audioDropzone" tabindex="0" role="button" aria-label="Upload audio clip">
+          <i class="ti ti-microphone"></i>Click to upload a voice clip
+          <div class="file-hint">mp3 · wav · m4a — max 8MB</div>
+        </div>
+        <div class="file-preview" id="audioPreview" style="display:none;"></div>`;
+      bindMessageInput();
+      bindDropzone('audioDropzone', 'audioFileInput', onAudioFileSelected);
+    } else {
+      wrap.innerHTML = `
+        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
+        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>`;
+      bindMessageInput();
+    }
+  }
+
+  function bindDropzone(zoneId, inputId, onSelect){
+    const zone = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    if (!zone || !input) return;
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) onSelect(file);
+    });
+    input.addEventListener('change', () => { if (input.files[0]) onSelect(input.files[0]); });
+  }
+
+  function onMediaFileSelected(file){
+    if (!file.type.startsWith('image/')) { alert('Please choose an image or GIF file'); return; }
+    if (file.size > MAX_IMAGE_BYTES) { alert('Image must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      selectedMediaFile = { name: file.name, size: file.size, dataUrl: reader.result };
+      const preview = document.getElementById('mediaPreview');
+      if (!preview) return;
+      preview.style.display = 'flex';
+      preview.innerHTML = `
+        <img src="${reader.result}" alt="">
+        <div class="file-preview-info">
+          <div class="file-preview-name">${escapeHtmlLocal(file.name)}</div>
+          <div class="file-preview-size">${(file.size/1024).toFixed(0)} KB</div>
+        </div>
+        <button type="button" class="file-preview-remove" id="mediaRemoveBtn"><i class="ti ti-x"></i></button>`;
+      document.getElementById('mediaRemoveBtn').addEventListener('click', clearMediaFile);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function onAudioFileSelected(file){
+    if (!file.type.startsWith('audio/')) { alert('Please choose an audio file'); return; }
+    if (file.size > MAX_AUDIO_BYTES) { alert('Audio clip must be under 8MB'); return; }
+    selectedAudioFile = { name: file.name, size: file.size };
+    const preview = document.getElementById('audioPreview');
+    if (!preview) return;
+    const url = URL.createObjectURL(file);
+    preview.style.display = 'flex';
+    preview.innerHTML = `
+      <div class="file-preview-info" style="flex:1;">
+        <div class="file-preview-name">${escapeHtmlLocal(file.name)}</div>
+        <audio controls src="${url}" style="width:100%;margin-top:6px;"></audio>
+      </div>
+      <button type="button" class="file-preview-remove" id="audioRemoveBtn"><i class="ti ti-x"></i></button>`;
+    document.getElementById('audioRemoveBtn').addEventListener('click', clearAudioFile);
+  }
+
+  function clearMediaFile(){
+    selectedMediaFile = null;
+    const preview = document.getElementById('mediaPreview');
+    const input = document.getElementById('mediaFileInput');
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (input) input.value = '';
+  }
+
+  function clearAudioFile(){
+    selectedAudioFile = null;
+    const preview = document.getElementById('audioPreview');
+    const input = document.getElementById('audioFileInput');
+    if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+    if (input) input.value = '';
+  }
+
+  document.getElementById('amountInput').addEventListener('input', updateAll);
+
+  document.getElementById('submitBtn').addEventListener('click', () => {
+    const amount = parseFloat(document.getElementById('amountInput').value) || 0;
+    const name   = document.getElementById('donorName').value.trim();
+    const email  = document.getElementById('donorEmail').value.trim();
+    const message = (document.getElementById('messageInput')?.value || '').trim();
+
+    if (!name) { alert('Please enter your name'); return; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Enter a valid email'); return; }
+    if (!amount || amount < 1 || !selectedType) { alert('Please choose an amount and message type'); return; }
+
+    const activeType = CFG.messageTypes.find(t => t.id === selectedType);
+
+    const payload = {
+      name, email, amount, message,
+      type: selectedType,
+      typeLabel: activeType ? activeType.label : '',
+      currencySymbol: CFG.currency.symbol,
+      currencyCode: CFG.currency.code,
+      source: 'popup'
+    };
+    if (selectedType === 'media' && selectedMediaFile) {
+      payload.mediaFile = { name: selectedMediaFile.name, size: selectedMediaFile.size, dataUrl: selectedMediaFile.dataUrl };
+    }
+    if (selectedType === 'audio' && selectedAudioFile) {
+      // Only metadata is kept — the audio bytes themselves aren't wired to a
+      // backend upload endpoint yet, so they aren't carried past this page.
+      payload.audioFileName = selectedAudioFile.name;
+      payload.audioFileSize = selectedAudioFile.size;
+    }
+
+    try {
+      sessionStorage.setItem('donationData', JSON.stringify(payload));
+    } catch (e) {
+      // sessionStorage quota exceeded (e.g. large image) — drop the image data URL and retry
+      delete payload.mediaFile;
+      sessionStorage.setItem('donationData', JSON.stringify(payload));
+    }
+
+    window.location.href = 'payment.html'; // vercel.json also rewrites /payment → payment.html
+  });
+})();
+</script>
+</body>
+</html>
