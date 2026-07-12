@@ -526,13 +526,16 @@
 
     if (id === 'media') {
       wrap.innerHTML = `
-        <div class="field-label">${CFG.labels.messageField}</div>
+        <div class="field-label"><span>${CFG.labels.messageField}</span><span id="msgCounter">0/${CFG.messageMaxLength}</span></div>
+        <textarea class="textarea" id="messageInput" maxlength="${CFG.messageMaxLength}" placeholder="${CFG.labels.messagePlaceholder}"></textarea>
+        <div class="field-label" style="margin-top:12px;">ATTACH IMAGE / GIF (OPTIONAL)</div>
         <input type="file" id="mediaFileInput" accept="image/*" hidden>
         <div class="dropzone" id="mediaDropzone" tabindex="0" role="button" aria-label="Upload image or GIF">
           <i class="ti ti-cloud-upload"></i>Click to choose an image or GIF, or drop it here
           <div class="file-hint">png · jpg · gif — max 2MB</div>
         </div>
         <div class="file-preview" id="mediaPreview" style="display:none;"></div>`;
+      bindMessageInput();
       bindDropzone('mediaDropzone', 'mediaFileInput', onMediaFileSelected);
     } else if (id === 'audio') {
       wrap.innerHTML = `
