@@ -2,7 +2,7 @@
   "buildCommand": "sed -i \"s|{{DEFAULT_YOUTUBE_URL}}|$DEFAULT_YOUTUBE_URL|g\" index.html donate-popup.html && sed -i \"s|{{SE_CHAT_URL}}|$SE_CHAT_URL|g\" index.html donate-popup.html && sed -i \"s|{{PRODUCTION_MODE}}|$PRODUCTION_MODE|g\" index.html thankyou.html",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/", "destination": "/donate-popup.html" },
+    { "source": "/", "destination": "/index.html" },
     { "source": "/thankyou", "destination": "/thankyou.html" },
     { "source": "/donate", "destination": "/donate-popup.html" },
     { "source": "/payment", "destination": "/payment.html" }
