@@ -13,6 +13,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
+  // The StreamElements Custom Widget is served from StreamElements' own domain,
+  // not ours — it needs CORS to be able to fetch this endpoint at all. The data
+  // returned here is already public-safe, so an open origin is fine.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const limit = Math.min(parseInt(req.query.limit, 10) || 3, 20);
@@ -21,7 +27,7 @@ export default async function handler(req, res) {
     const url =
       `${SUPABASE_URL}/rest/v1/donations` +
       `?status=eq.paid` +
-      `&select=customer_name,amount,currency,message,created_at` +
+      `&select=customer_name,amount,currency,message,created_at,donation_type,media_url` +
       `&order=created_at.desc` +
       `&limit=${limit}`;
 
@@ -44,6 +50,8 @@ export default async function handler(req, res) {
       currency: r.currency || 'INR',
       message: r.message || '',
       created_at: r.created_at,
+      donation_type: r.donation_type || 'text',
+      media_url: r.media_url || null,
     }));
 
     // Cache briefly at the edge so a burst of viewers doesn't hammer Supabase
