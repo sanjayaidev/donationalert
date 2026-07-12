@@ -252,7 +252,10 @@
       <div class="stream-head">
         <div class="avatar-wrap">
           <div class="avatar-ring"></div>
-          <div class="avatar" id="avatar">C</div>
+          <div class="avatar" id="avatar">
+            <img id="avatarImg" src="" alt="" style="display:none;">
+            <span id="avatarText">C</span>
+          </div>
         </div>
         <div>
           <div class="stream-name" id="streamerName">CHAMP GAMING</div>
@@ -352,8 +355,18 @@
     CFG = cfg;
     document.getElementById('streamerName').textContent = cfg.streamer.name;
     document.getElementById('streamerDesc').textContent = cfg.streamer.description;
-    document.getElementById('avatar').textContent = (cfg.streamer.name||'?').trim().charAt(0).toUpperCase();
-    if(cfg.streamer.avatarUrl){ document.getElementById('avatar').innerHTML = `<img src="${cfg.streamer.avatarUrl}" alt="">`; }
+    
+    // Handle logo: show image if URL provided, otherwise show initial
+    const avatarImg = document.getElementById('avatarImg');
+    const avatarText = document.getElementById('avatarText');
+    if (cfg.streamer.avatarUrl && cfg.streamer.avatarUrl.trim() !== '') {
+      avatarImg.src = cfg.streamer.avatarUrl;
+      avatarImg.style.display = 'block';
+      avatarText.style.display = 'none';
+    } else {
+      avatarText.textContent = (cfg.streamer.name||'?').trim().charAt(0).toUpperCase();
+    }
+    
     document.getElementById('livePill').style.display = cfg.streamer.showStatus === false ? 'none' : 'flex';
     document.getElementById('livePill').lastChild.textContent = cfg.streamer.status || 'LIVE';
 
