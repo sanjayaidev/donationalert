@@ -1,0 +1,79 @@
+{
+  "streamer": {
+    "name": "Champ Gaming",
+    "description": "Champ Support",
+    "avatarUrl": "",
+    "status": "LIVE",
+    "showStatus": true
+  },
+
+  "currency": {
+    "code": "INR",
+    "symbol": "\u20b9"
+  },
+
+  "messageTypes": [
+    {
+      "id": "text",
+      "label": "TEXT",
+      "sublabel": "Chat message on stream",
+      "icon": "message-circle",
+      "color": "#22d3ee",
+      "colorDim": "#0e3a42",
+      "minAmount": 1,
+      "loyaltyPointsPer100": 5
+    },
+    {
+      "id": "audio",
+      "label": "AUDIO",
+      "sublabel": "Read aloud (TTS)",
+      "icon": "mic",
+      "color": "#ffb020",
+      "colorDim": "#4a3208",
+      "minAmount": 200,
+      "loyaltyPointsPer100": 8
+    },
+    {
+      "id": "media",
+      "label": "IMAGE / GIF",
+      "sublabel": "Shown on overlay",
+      "icon": "image",
+      "color": "#a855f7",
+      "colorDim": "#2f1a45",
+      "minAmount": 300,
+      "loyaltyPointsPer100": 12
+    }
+  ],
+
+  "buttons": {
+    "support": "SUPPORT",
+    "locked": "LOCKED",
+    "rewards": "VIEW REWARDS & PERKS",
+    "creatorSignup": "Sign Up as a Creator"
+  },
+
+  "labels": {
+    "nameField": "YOUR NAME",
+    "namePlaceholder": "Enter your name",
+    "typeField": "MESSAGE TYPE",
+    "amountField": "AMOUNT",
+    "messageField": "MESSAGE",
+    "messagePlaceholder": "Your message (optional)",
+    "unlockHint": "Unlocks at {amount}",
+    "loyaltyLabel": "Earn Reward Points",
+    "loyaltyEarnedPrefix": "+",
+    "loyaltyEarnedSuffix": " pts"
+  },
+
+  "loyalty": {
+    "enabled": true,
+    "tiers": [
+      { "name": "Bronze Supporter", "minAmount": 1,   "multiplier": 1 },
+      { "name": "Silver Supporter", "minAmount": 200, "multiplier": 1.25 },
+      { "name": "Gold Supporter",   "minAmount": 500, "multiplier": 1.5 },
+      { "name": "Champ Legend",     "minAmount": 1000,"multiplier": 2 }
+    ]
+  },
+
+  "messageMaxLength": 70
+}
