@@ -49,8 +49,9 @@ verify-order.js checks payment status with provider
 
 ```
 /
-├── index.html              # Main donation page
-├── donate-popup.html       # Popup overlay page (served at / and /donate)
+├── index.html              # Main stream page with embedded donate button widget (served at /)
+├── donate-popup.html       # Standalone popup overlay page (served at /donate)
+├── donate.js               # Self-contained donate button + text-only popup widget
 ├── thankyou.html           # Payment verification + polling page
 ├── vercel.json             # Vercel config (build command + rewrites)
 ├── api/
@@ -501,6 +502,16 @@ Click **Deploy**. Vercel will build and deploy automatically.
 
 ## Step 6 — Test the Setup
 
+### Using the Donate Button Widget (index.html)
+
+When you visit your Vercel URL (`/`), you'll see the main stream page with a floating **"SUPPORT THE STREAM"** button in the bottom-right corner. Click it to open the text-only donation popup.
+
+**Features:**
+- Animated gradient button with pulse effect
+- Text-only donations (no tiers, no rewards system)
+- Same payment flow as the full donate-popup page
+- Redirects to `payment.html` on submit
+
 ### Test payment creation (browser console on your site)
 ```js
 fetch('/api/create-order', {
@@ -528,7 +539,7 @@ fetch('/api/test-se', {
 
 ### Test media alerts (image/audio) — from donate-popup page console
 
-First, set your `TEST_PASSWORD` environment variable in Vercel. Then open the browser console on your donate-popup page (`/` or `/donate`) and run:
+First, set your `TEST_PASSWORD` environment variable in Vercel. Then open the browser console on your donate-popup page (`/donate`) and run:
 
 **Test Image Alert**
 ```js
@@ -572,7 +583,7 @@ fetch('/api/test-media', {
 }).then(r => r.json()).then(console.log)
 ```
 
-> **Note:** The test functions `testImageAlert()` and `testAudioAlert()` are automatically available in the browser console when you load the donate-popup page. They will prompt you for the TEST_PASSWORD before sending.
+> **Note:** The test functions `testImageAlert()` and `testAudioAlert()` are automatically available in the browser console when you load the donate-popup page (`/donate`). They will prompt you for the TEST_PASSWORD before sending.
 
 ---
 
