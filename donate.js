@@ -9,7 +9,8 @@
   // ===== CONFIGURATION =====
   const CONFIG = {
     streamerName: 'CHAMP GAMING',
-    streamerDesc: 'CHAMP SUPPORT',
+    streamerDesc: 'Champ Support',
+    logoUrl: '/CGLive.png', // Path to logo image in same directory as index.html
     currency: { code: 'INR', symbol: '₹' },
     messageTypes: [
       { id: 'text', label: 'TEXT', sublabel: 'Chat message on stream', color: '#22d3ee', minAmount: 1 }
@@ -191,6 +192,12 @@
       font-weight: 800;
       font-size: 18px;
       color: var(--st-text);
+      overflow: hidden;
+    }
+    .st-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .st-stream-name {
       font-family: var(--st-font-head);
@@ -326,7 +333,10 @@
           <div class="st-stream-head">
             <div class="st-avatar-wrap">
               <div class="st-avatar-ring"></div>
-              <div class="st-avatar" id="stAvatar">?</div>
+              <div class="st-avatar" id="stAvatar">
+                <img id="stAvatarImg" src="" alt="" style="display:none;">
+                <span id="stAvatarText">?</span>
+              </div>
             </div>
             <div>
               <div class="st-stream-name" id="stStreamerName">STREAMER</div>
@@ -402,7 +412,18 @@
     // Initialize UI
     const cfg = CONFIG;
     document.getElementById('stStreamerName').textContent = cfg.streamerName;
-    document.getElementById('stAvatar').textContent = cfg.streamerName.charAt(0).toUpperCase();
+    
+    // Handle logo: show image if URL provided, otherwise show initial
+    const avatarImg = document.getElementById('stAvatarImg');
+    const avatarText = document.getElementById('stAvatarText');
+    if (cfg.logoUrl && cfg.logoUrl.trim() !== '') {
+      avatarImg.src = cfg.logoUrl;
+      avatarImg.style.display = 'block';
+      avatarText.style.display = 'none';
+    } else {
+      avatarText.textContent = cfg.streamerName.charAt(0).toUpperCase();
+    }
+    
     document.getElementById('stNameLabel').textContent = cfg.labels.nameField;
     document.getElementById('stDonorName').placeholder = cfg.labels.namePlaceholder;
     document.getElementById('stAmountLabel').textContent = cfg.labels.amountField;
