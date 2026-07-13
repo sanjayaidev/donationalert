@@ -252,6 +252,22 @@
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const error = urlParams.get('error');
+      const success = urlParams.get('success');
+      const channelId = urlParams.get('channelId');
+      const channelName = urlParams.get('channelName');
+
+      // Handle success redirect from OAuth callback
+      if (success === 'true' && channelId) {
+        const decodedName = channelName ? decodeURIComponent(channelName) : 'Connected Channel';
+        localStorage.setItem('yt_channel_id', channelId);
+        localStorage.setItem('yt_channel_name', decodedName);
+        showStatus('success', 'Channel Connected!', `Successfully connected ${decodedName}. Your session has been stored securely.`);
+        document.getElementById('connectBtn').style.display = 'none';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+        return;
+      }
 
       if (error) {
         showStatus('error', 'Authorization denied', 'You denied access to your YouTube account. Please try again.');
@@ -259,6 +275,8 @@
       }
 
       if (code) {
+        // This case should not happen anymore since we use GET redirects
+        // But kept for backward compatibility
         exchangeCodeForToken(code);
       }
     });
