@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect YouTube Channel · StreamTip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg:        #040407;
+      --surface:   #09090f;
+      --surface2:  #0e0e18;
+      --surface3:  #13131f;
+      --border:    #1c1c2e;
+      --border2:   #252540;
+      --accent:    #6c63ff;
+      --accent2:   #9b94ff;
+      --accent3:   #c8c4ff;
+      --red:       #ff3f3f;
+      --red-dim:   #3a1212;
+      --green:     #22d382;
+      --text:      #e8e8f8;
+      --text2:     #9090b8;
+      --text3:     #5a5a80;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Syne', sans-serif;
+      --yt-red:    #ff0000;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 40px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: var(--text2);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 0.9rem;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .youtube-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--yt-red);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .youtube-icon i {
+      font-size: 32px;
+      color: white;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      width: 100%;
+      text-decoration: none;
+    }
+
+    .btn-youtube {
+      background: var(--yt-red);
+      color: white;
+    }
+
+    .btn-youtube:hover {
+      background: #cc0000;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3);
+    }
+
+    .btn-youtube:disabled {
+      background: var(--surface3);
+      color: var(--text3);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .status-box {
+      margin-top: 30px;
+      padding: 20px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .status-box.success {
+      display: block;
+      border-color: var(--green);
+    }
+
+    .status-box.error {
+      display: block;
+      border-color: var(--red);
+    }
+
+    .status-box.info {
+      display: block;
+    }
+
+    .status-title {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-message {
+      color: var(--text2);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .channel-info {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--surface3);
+      border-radius: 8px;
+    }
+
+    .channel-name {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    .channel-id {
+      font-size: 0.75rem;
+      color: var(--text3);
+      word-break: break-all;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text2);
+      text-decoration: none;
+      margin-top: 20px;
+      font-size: 0.85rem;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: var(--accent2);
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-section">
+      <div class="youtube-icon">
+        <i class="ti ti-brand-youtube"></i>
+      </div>
+    </div>
+    
+    <h1>Connect YouTube Channel</h1>
+    <p class="subtitle">Link your YouTube channel to enable live chat integration and message pinning</p>
+
+    <button id="connectBtn" class="btn btn-youtube" onclick="initiateAuth()">
+      <i class="ti ti-brand-youtube"></i>
+      <span>Connect with YouTube</span>
+    </button>
+
+    <div id="statusBox" class="status-box"></div>
+
+    <a href="/" class="back-link">
+      <i class="ti ti-arrow-left"></i>
+      Back to Home
+    </a>
+  </div>
+
+  <script>
+    // Configuration - Replace with your actual values
+    const YOUTUBE_CLIENT_ID = '{{YOUTUBE_CLIENT_ID}}';
+    const REDIRECT_URI = window.location.origin + '/api/youtube/callback';
+    const SCOPES = [
+      'https://www.googleapis.com/auth/youtube.force-ssl',
+      'https://www.googleapis.com/auth/youtube.readonly',
+      'https://www.googleapis.com/auth/userinfo.profile'
+    ].join(' ');
+
+    // Check for callback parameters on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+
+      if (error) {
+        showStatus('error', 'Authorization denied', 'You denied access to your YouTube account. Please try again.');
+        return;
+      }
+
+      if (code) {
+        exchangeCodeForToken(code);
+      }
+    });
+
+    function initiateAuth() {
+      const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      authUrl.searchParams.set('client_id', YOUTUBE_CLIENT_ID);
+      authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.set('response_type', 'code');
+      authUrl.searchParams.set('scope', SCOPES);
+      authUrl.searchParams.set('access_type', 'offline');
+      authUrl.searchParams.set('prompt', 'consent');
+      authUrl.searchParams.set('state', generateState());
+
+      window.location.href = authUrl.toString();
+    }
+
+    async function exchangeCodeForToken(code) {
+      const btn = document.getElementById('connectBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span><span>Connecting...</span>';
+
+      try {
+        const response = await fetch('/api/youtube/callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to connect');
+        }
+
+        showStatus('success', 'Channel Connected!', `Successfully connected ${data.channelName}. Your session has been stored securely.`);
+        
+        // Store channel info in localStorage for quick access
+        localStorage.setItem('yt_channel_id', data.channelId);
+        localStorage.setItem('yt_channel_name', data.channelName);
+
+        btn.style.display = 'none';
+
+        // Redirect after success
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+
+      } catch (err) {
+        console.error('Connection error:', err);
+        showStatus('error', 'Connection Failed', err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-brand-youtube"></i><span>Try Again</span>';
+      }
+    }
+
+    function showStatus(type, title, message) {
+      const box = document.getElementById('statusBox');
+      box.className = `status-box ${type}`;
+      box.innerHTML = `
+        <div class="status-title">
+          <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'alert-circle' : 'info-circle'}"></i>
+          ${title}
+        </div>
+        <div class="status-message">${message}</div>
+        ${type === 'success' ? `
+          <div class="channel-info">
+            <div class="channel-name">${localStorage.getItem('yt_channel_name') || 'Connected Channel'}</div>
+            <div class="channel-id">ID: ${localStorage.getItem('yt_channel_id') || 'N/A'}</div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function generateState() {
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+  </script>
+</body>
+</html>
