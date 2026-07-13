@@ -1,0 +1,12 @@
+{
+  "name": "streamtip-youtube-integration",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "YouTube Live Chat Integration for StreamTip",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "googleapis": "^128.0.0"
+  }
+}
