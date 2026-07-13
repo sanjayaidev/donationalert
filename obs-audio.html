@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OBS Audio Player · StreamTip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css">
+  <style>
+    :root {
+      --bg:        #040407;
+      --surface:   #09090f;
+      --surface2:  #0e0e18;
+      --border:    #1c1c2e;
+      --accent:    #22d3ee;
+      --text:      #e8e8f8;
+      --text2:     #9090b8;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Syne', sans-serif;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      background: var(--bg);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 40px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: var(--text2);
+      font-size: 0.85rem;
+      margin-bottom: 30px;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 25px;
+      background: var(--surface2);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .visualizer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 60px;
+      margin: 30px 0;
+    }
+
+    .bar {
+      width: 8px;
+      background: linear-gradient(180deg, var(--accent), #9b94ff);
+      border-radius: 4px;
+      transition: height 0.1s ease;
+    }
+
+    .playing .bar {
+      animation: visualize 0.8s ease-in-out infinite;
+    }
+
+    .playing .bar:nth-child(1) { animation-delay: 0s; }
+    .playing .bar:nth-child(2) { animation-delay: 0.1s; }
+    .playing .bar:nth-child(3) { animation-delay: 0.2s; }
+    .playing .bar:nth-child(4) { animation-delay: 0.3s; }
+    .playing .bar:nth-child(5) { animation-delay: 0.4s; }
+
+    @keyframes visualize {
+      0%, 100% { height: 20px; }
+      50% { height: 50px; }
+    }
+
+    .log {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      text-align: left;
+      font-size: 0.8rem;
+      color: var(--text2);
+    }
+
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-entry.play {
+      color: var(--accent);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* For OBS: hide everything when playing */
+    body.obs-mode .container > *:not(.visualizer) {
+      opacity: 0;
+    }
+
+    body.obs-mode .visualizer {
+      transform: scale(1.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔊 OBS Audio Player</h1>
+    <p class="subtitle">Ready to play donation sounds in your stream</p>
+
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span id="statusText">Waiting for audio commands...</span>
+    </div>
+
+    <div class="visualizer" id="visualizer">
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+      <div class="bar"></div>
+    </div>
+
+    <div class="log" id="log">
+      <div class="log-entry">System initialized. Waiting for commands...</div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const CONFIG = {
+      defaultSounds: {
+        'donation': '/sounds/donation.mp3',
+        'alert': '/sounds/alert.mp3',
+        'notification': '/sounds/notification.mp3',
+        'cheer': '/sounds/cheer.mp3',
+        'sub': '/sounds/sub.mp3'
+      },
+      obsMode: false // Set to true to hide UI elements in OBS
+    };
+
+    // State
+    let audioContext = null;
+    let isPlaying = false;
+
+    // DOM Elements
+    const statusText = document.getElementById('statusText');
+    const visualizer = document.getElementById('visualizer');
+    const logContainer = document.getElementById('log');
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const playSound = params.get('play');
+      const soundUrl = params.get('url');
+      const obsMode = params.get('obs');
+
+      // Enable OBS mode if requested
+      if (obsMode === 'true' || obsMode === '1') {
+        document.body.classList.add('obs-mode');
+        CONFIG.obsMode = true;
+      }
+
+      // Auto-play if sound specified in URL
+      if (playSound) {
+        playAudio(playSound);
+      } else if (soundUrl) {
+        playAudioFromUrl(soundUrl);
+      }
+
+      // Setup event listeners
+      setupEventListeners();
+
+      // Resume audio context on first interaction
+      document.addEventListener('click', resumeAudioContext, { once: true });
+      document.addEventListener('keydown', resumeAudioContext, { once: true });
+    });
+
+    function resumeAudioContext() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }
+
+    function setupEventListeners() {
+      // Listen for postMessage events (for external control)
+      window.addEventListener('message', handlePostMessage);
+
+      // Listen for custom events (for integration with other scripts)
+      window.addEventListener('playDonationSound', (e) => {
+        const { sound, url, donorName, amount } = e.detail || {};
+        if (url) {
+          playAudioFromUrl(url, donorName, amount);
+        } else if (sound) {
+          playAudio(sound, donorName, amount);
+        }
+      });
+    }
+
+    function handlePostMessage(event) {
+      // Validate origin if needed for security
+      const data = event.data;
+      
+      if (data && data.action === 'playSound') {
+        if (data.url) {
+          playAudioFromUrl(data.url, data.donorName, data.amount);
+        } else if (data.sound) {
+          playAudio(data.sound, data.donorName, data.amount);
+        }
+      } else if (data && data.action === 'setObsMode') {
+        if (data.enabled) {
+          document.body.classList.add('obs-mode');
+        } else {
+          document.body.classList.remove('obs-mode');
+        }
+      }
+    }
+
+    async function playAudio(soundName, donorName, amount) {
+      try {
+        let audioUrl = CONFIG.defaultSounds[soundName];
+        
+        if (!audioUrl) {
+          // Try to play as direct URL
+          if (soundName.startsWith('http')) {
+            audioUrl = soundName;
+          } else {
+            log(`❌ Unknown sound: ${soundName}`, 'error');
+            return;
+          }
+        }
+
+        await playAudioFromUrl(audioUrl, donorName, amount);
+      } catch (error) {
+        log(`❌ Error playing ${soundName}: ${error.message}`, 'error');
+      }
+    }
+
+    async function playAudioFromUrl(url, donorName, amount) {
+      try {
+        log(`▶️ Loading audio...`, 'play');
+        statusText.textContent = donorName 
+          ? `Playing for ${donorName}${amount ? ` (${amount})` : ''}`
+          : 'Playing audio...';
+
+        const audio = new Audio(url);
+        
+        // Add cache-busting parameter
+        audio.src = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+        
+        audio.preload = 'auto';
+        
+        audio.addEventListener('canplaythrough', () => {
+          log(`✅ Audio ready, playing...`, 'play');
+          startVisualizer();
+        }, { once: true });
+
+        audio.addEventListener('play', () => {
+          isPlaying = true;
+          visualizer.classList.add('playing');
+          log(`🔊 Now playing`, 'play');
+        });
+
+        audio.addEventListener('ended', () => {
+          isPlaying = false;
+          visualizer.classList.remove('playing');
+          statusText.textContent = 'Waiting for audio commands...';
+          log(`⏹️ Playback complete`, 'play');
+        });
+
+        audio.addEventListener('error', (e) => {
+          log(`❌ Audio error: ${e.message}`, 'error');
+          visualizer.classList.remove('playing');
+          statusText.textContent = 'Error loading audio';
+        });
+
+        await audio.play();
+
+      } catch (error) {
+        log(`❌ Failed to play: ${error.message}`, 'error');
+        statusText.textContent = 'Playback failed';
+        visualizer.classList.remove('playing');
+      }
+    }
+
+    function startVisualizer() {
+      visualizer.classList.add('playing');
+    }
+
+    function stopVisualizer() {
+      visualizer.classList.remove('playing');
+    }
+
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+
+      // Keep only last 50 entries
+      while (logContainer.children.length > 50) {
+        logContainer.removeChild(logContainer.firstChild);
+      }
+    }
+
+    // Expose API for external control
+    window.playDonationSound = (url, donorName, amount) => {
+      playAudioFromUrl(url, donorName, amount);
+    };
+
+    window.playSoundByName = (soundName, donorName, amount) => {
+      playAudio(soundName, donorName, amount);
+    };
+
+    console.log('OBS Audio Player ready! Use window.playDonationSound(url, donorName, amount) to play sounds.');
+  </script>
+</body>
+</html>
