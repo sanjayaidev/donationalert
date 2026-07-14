@@ -268,10 +268,46 @@
         return;
       }
 
-      if (error) {
-        showStatus('error', 'Authorization denied', 'You denied access to your YouTube account. Please try again.');
-        return;
-      }
+     if (error) {
+  const errorDescription = urlParams.get('error_description') || '';
+  console.error('OAuth error:', error, errorDescription);
+
+  let title = 'Authorization Failed';
+  let message = 'Something went wrong connecting your YouTube account. Please try again.';
+
+  switch (error) {
+    case 'access_denied':
+      title = 'Authorization Denied';
+      message = 'You denied access to your YouTube account, or Google blocked the request because this app is unverified for the requested scopes. Please try again, or check that you were added as a test user.';
+      break;
+    case 'admin_policy_enforced':
+      title = 'Blocked by Workspace Admin';
+      message = 'Your Google Workspace administrator has blocked this app from accessing your account. Contact your admin to allow it.';
+      break;
+    case 'org_internal':
+      title = 'Restricted App';
+      message = 'This app is restricted to a specific Google Workspace organization and your account isn\'t part of it.';
+      break;
+    case 'disallowed_useragent':
+      title = 'Unsupported Browser';
+      message = 'This browser or in-app webview isn\'t supported for Google sign-in. Please open this page in Chrome, Safari, or Firefox directly.';
+      break;
+    case 'invalid_client':
+      title = 'Configuration Error';
+      message = 'There\'s a problem with the app\'s OAuth client configuration. Please contact support.';
+      break;
+    case 'redirect_uri_mismatch':
+      title = 'Configuration Error';
+      message = 'The redirect URL doesn\'t match what\'s registered for this app. Please contact support.';
+      break;
+    default:
+      title = 'Authorization Failed';
+      message = `Google returned an error: ${error}${errorDescription ? ' — ' + errorDescription : ''}`;
+  }
+
+  showStatus('error', title, message);
+  return;
+}
 
       if (code) {
         // This case should not happen anymore since we use GET redirects
